@@ -1,0 +1,11 @@
+INSERT IGNORE INTO recetas (id, nombre, tipo_cocina, pais, dificultad, tiempo_prep_minutos, descripcion, instrucciones, ingredientes, imagen_url) VALUES
+(1, 'Tacos al Pastor', 'Mexicana', 'Mexico', 'Media', 45, 'Clasicos tacos mexicanos con cerdo adobado.', '1. Marinar cerdo en adobo por 2 horas.<br>2. Asar en la parrilla o trompo.<br>3. Servir en tortilla caliente con cebolla y cilantro.', 'Cerdo, Adobo de chile guajillo, Tortilla de maiz, Cebolla, Cilantro fresco', 'https://images.unsplash.com/photo-1551504734-5ee1c4a1479b?w=600&q=80');
+
+INSERT IGNORE INTO recetas (id, nombre, tipo_cocina, pais, dificultad, tiempo_prep_minutos, descripcion, instrucciones, ingredientes, imagen_url) VALUES
+(2, 'Pizza Margarita', 'Italiana', 'Italia', 'Facil', 30, 'Receta clasica napolitana con ingredientes frescos.', '1. Preparar la masa y dejar leudar.<br>2. Estirar y agregar salsa de tomate triturado.<br>3. Agregar mozzarella y hornear a alta temperatura por 10 mins.<br>4. Decorar con albahaca.', 'Harina fina, Levadura, Tomate San Marzano, Queso Mozzarella, Albahaca, Aceite de Oliva', 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=600&q=80');
+
+INSERT IGNORE INTO recetas (id, nombre, tipo_cocina, pais, dificultad, tiempo_prep_minutos, descripcion, instrucciones, ingredientes, imagen_url) VALUES
+(3, 'Sushi Roll Premium', 'Asiatica', 'Japon', 'Alta', 60, 'Maki sushi tradicional con salmon fresco y aguacate.', '1. Lavar y preparar arroz con vinagre de sushi.<br>2. Montar sobre el alga nori.<br>3. Rellenar con salmon y aguacate.<br>4. Enrollar firme y cortar en 8 piezas.', 'Arroz de grano corto, Alga Nori, Salmon crudo, Aguacate, Salsa de Soja, Wasabi', 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=600&q=80');
+
+INSERT IGNORE INTO recetas (id, nombre, tipo_cocina, pais, dificultad, tiempo_prep_minutos, descripcion, instrucciones, ingredientes, imagen_url) VALUES
+(4, 'Paella de Mariscos', 'Espanola', 'Espana', 'Media', 90, 'Arroz dorado impregnado de azafran con mariscos surtidos.', '1. Sofreir ajo y pimenton en paellera.<br>2. Sellar mariscos y reservar.<br>3. Tostar arroz y agregar caldo de pescado caliente con azafran.<br>4. Cocinar 20 mins y reposar.', 'Arroz Bomba, Azafran, Mix de Mariscos, Caldo de pescado, Pimiento Rojo, Ajo', 'https://images.unsplash.com/photo-1534080183184-e4070a2f4aab?w=600&q=80');

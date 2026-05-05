@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{fragments/layout :: head('Buscar - Recetas Premium')}"></head>
+
+<body>
+    <header th:replace="~{fragments/layout :: header}"></header>
+
+    <main>
+        <div class="search-container">
+            <h2 class="section-heading">Encuentra recetas</h2>
+            <form th:action="@{/buscar}" method="get">
+                <div class="filter-bar">
+                    <div class="form-group">
+                        <label>Busqueda libre</label>
+                        <input type="text" name="query" class="form-control" placeholder="Ej. Pollo, Tomate..."
+                            th:value="${param.query}">
+                    </div>
+                    <div class="form-group">
+                        <label>Tipo de Cocina</label>
+                        <select name="tipoCocina" class="form-control">
+                            <option value="">Todas</option>
+                            <option value="Mexicana"
+                                th:selected="${param.tipoCocina != null && param.tipoCocina[0] == 'Mexicana'}">Mexicana
+                            </option>
+                            <option value="Italiana"
+                                th:selected="${param.tipoCocina != null && param.tipoCocina[0] == 'Italiana'}">Italiana
+                            </option>
+                            <option value="Asiatica"
+                                th:selected="${param.tipoCocina != null && param.tipoCocina[0] == 'Asiatica'}">Asiatica
+                            </option>
+                            <option value="Espanola"
+                                th:selected="${param.tipoCocina != null && param.tipoCocina[0] == 'Espanola'}">Espanola
+                            </option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Dificultad</label>
+                        <select name="dificultad" class="form-control">
+                            <option value="">Cualquiera</option>
+                            <option value="Facil"
+                                th:selected="${param.dificultad != null && param.dificultad[0] == 'Facil'}">Facil
+                            </option>
+                            <option value="Media"
+                                th:selected="${param.dificultad != null && param.dificultad[0] == 'Media'}">Media
+                            </option>
+                            <option value="Alta"
+                                th:selected="${param.dificultad != null && param.dificultad[0] == 'Alta'}">Alta</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary">Buscar</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <section class="recipes-grid-section" th:if="${recetas != null && !recetas.isEmpty()}">
+            <div class="grid">
+                <div th:each="receta : ${recetas}" class="card recipe-card">
+                    <div class="card-img" th:style="'background-image: url(' + ${receta.imagenUrl} + ');'"></div>
+                    <div class="card-content">
+                        <span class="badge" th:text="${receta.tipoCocina}">Cocina</span>
+                        <h3 th:text="${receta.nombre}">Nombre Receta</h3>
+                        <div class="card-meta">
+                            <span><span th:text="${receta.tiempoPrepMinutos} + ' min'"></span></span>
+                            <span><span th:text="${receta.dificultad}"></span></span>
+                        </div>
+                        <a th:href="@{/receta/{id}(id=${receta.id})}" class="btn btn-outline btn-block">Ver Detalles</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div th:if="${recetas != null && recetas.isEmpty()}" class="no-results">
+            <h3>No se encontraron recetas con los parametros especificados.</h3>
+        </div>
+    </main>
+    <footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+
+</html>

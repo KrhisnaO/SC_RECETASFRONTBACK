@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Archivo de exclusiones para SpotBugs + FindSecBugs
+    Proyecto: recetas-app
+    Excluye falsos positivos conocidos y clases generadas automáticamente.
+-->
+<FindBugsFilter>
+    <!-- Excluir clases generadas por Lombok (si aplica en el futuro) -->
+    <Match>
+        <Class name="~.*\$.*"/>
+    </Match>
+
+    <!-- Excluir clase de test -->
+    <Match>
+        <Class name="~.*Test.*"/>
+    </Match>
+</FindBugsFilter>

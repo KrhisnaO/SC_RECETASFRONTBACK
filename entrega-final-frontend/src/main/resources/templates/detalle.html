@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${receta.nombre})}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main>
+  <div class="recipe-detail">
+    <div class="detail-header-img"
+         th:style="'background-image: linear-gradient(to top, rgba(0,0,0,0.8), transparent), url(' + ${receta.imagenUrl} + ');'">
+      <div class="detail-header-overlay">
+        <h1 class="detail-title" th:text="${receta.nombre}">Titulo</h1>
+      </div>
+    </div>
+    <div class="detail-content">
+      <div class="meta-tags">
+        <span class="meta-tag" th:text="${receta.pais}"></span>
+        <span class="meta-tag" th:text="${receta.tipoCocina}"></span>
+        <span class="meta-tag" th:text="${receta.tiempoPrepMinutos} + ' min'"></span>
+        <span class="meta-tag" th:text="${receta.dificultad}"></span>
+      </div>
+      <p class="detail-description" th:text="${receta.descripcion}"></p>
+      <div class="grid-2">
+        <div>
+          <h3 class="sub-section-title">Ingredientes</h3>
+          <ul class="ingredients-list">
+            <li th:each="ing : ${#strings.arraySplit(receta.ingredientes, ',')}">
+              <span th:text="${ing.trim()}"></span>
+            </li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="sub-section-title">Instrucciones</h3>
+          <!-- th:text escapa HTML → SAST Fix XSS -->
+          <div class="instructions-list" th:text="${receta.instrucciones}"></div>
+        </div>
+      </div>
+
+      <hr class="section-divider">
+
+      <!-- Galería multimedia -->
+      <div class="media-section" th:if="${receta.elementosMedia != null and !receta.elementosMedia.isEmpty()}">
+        <h3 class="section-title">Galería Multimedia</h3>
+        <div class="media-gallery">
+          <div th:each="media : ${receta.elementosMedia}" class="media-item">
+            <img th:if="${media.fileType == 'FOTO'}" th:src="${media.fileUrl}" alt="Foto">
+            <video th:if="${media.fileType == 'VIDEO'}" th:src="${media.fileUrl}" controls></video>
+          </div>
+        </div>
+      </div>
+
+      <hr class="section-divider">
+
+      <!-- Valoraciones -->
+      <div class="rating-section">
+        <h3 class="section-title">Valoración</h3>
+        <div class="rating-display">
+          <span class="score" th:text="${promedioValoracion}">0.0</span>
+          <span class="count" th:text="'(' + ${totalValoraciones} + ' valoraciones)'"></span>
+        </div>
+        <!-- Formulario autenticado hacia ruta del FRONTEND -->
+        <form th:if="${session.JWT_TOKEN != null}"
+              th:action="@{/receta/{id}/valorar(id=${receta.id})}" method="post">
+          <div class="star-input">
+            <input type="radio" id="star5" name="puntuacion" value="5"><label for="star5">★</label>
+            <input type="radio" id="star4" name="puntuacion" value="4"><label for="star4">★</label>
+            <input type="radio" id="star3" name="puntuacion" value="3" checked><label for="star3">★</label>
+            <input type="radio" id="star2" name="puntuacion" value="2"><label for="star2">★</label>
+            <input type="radio" id="star1" name="puntuacion" value="1"><label for="star1">★</label>
+          </div>
+          <button type="submit" class="btn btn-primary">Enviar Valoración</button>
+        </form>
+      </div>
+
+      <hr class="section-divider">
+
+      <!-- Comentarios -->
+      <div class="comments-section">
+        <h3 class="section-title">Comentarios
+          <span th:text="'(' + ${comentarios.size()} + ')'" class="comment-count"></span>
+        </h3>
+
+        <form th:if="${session.JWT_TOKEN != null}"
+              th:action="@{/receta/{id}/comentar(id=${receta.id})}" method="post" class="comment-form">
+          <textarea name="contenido" class="form-control" placeholder="Escribe tu comentario..." required minlength="3"></textarea>
+          <button type="submit" class="btn btn-primary">Publicar Comentario</button>
+        </form>
+
+        <div th:if="${session.JWT_TOKEN == null}" class="anon-prompt">
+          <p>Inicia sesión para comentar y valorar</p>
+          <a th:href="@{/login}" class="btn btn-primary">Iniciar Sesión</a>
+        </div>
+
+        <div class="comment-list">
+          <div th:each="c : ${comentarios}" class="comment-card">
+            <div class="comment-header">
+              <span class="comment-author" th:text="${c.usuario != null ? c.usuario.username : 'Usuario'}"></span>
+            </div>
+            <p class="comment-body" th:text="${c.contenido}"></p>
+          </div>
+        </div>
+        <p th:if="${comentarios.isEmpty()}" class="empty-state">Sé el primero en comentar.</p>
+      </div>
+    </div>
+  </div>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

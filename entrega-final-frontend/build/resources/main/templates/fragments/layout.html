@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title)">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title th:text="${title}">Recetas Premium</title>
+  <link rel="stylesheet" th:href="@{/css/styles.css}">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <header th:fragment="header">
+    <nav class="navbar">
+      <div class="logo"><a th:href="@{/home}">Recetas Premium</a></div>
+      <ul class="nav-links">
+        <li><a th:href="@{/home}">Inicio</a></li>
+        <li><a th:href="@{/buscar}">Buscar</a></li>
+      </ul>
+      <div class="auth-buttons">
+        <th:block th:if="${session.JWT_TOKEN == null}">
+          <a th:href="@{/login}" class="btn btn-primary">Iniciar Sesión</a>
+        </th:block>
+        <div th:if="${session.JWT_TOKEN != null}" class="user-menu">
+          <span class="username-badge" th:text="${session.USERNAME}"></span>
+          <a th:href="@{/logout}" class="btn btn-outline">Cerrar Sesión</a>
+        </div>
+      </div>
+    </nav>
+  </header>
+  <footer th:fragment="footer">
+    <p>&copy; 2026 Recetas Premium. Todos los derechos reservados.</p>
+  </footer>
+</body>
+</html>
