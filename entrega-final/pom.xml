@@ -18,7 +18,7 @@
     <description>Recetas App — Backend REST API</description>
 
     <properties>
-        <java.version>21</java.version>
+        <java.version>17</java.version>
         <jacoco.version>0.8.12</jacoco.version>
     </properties>
 

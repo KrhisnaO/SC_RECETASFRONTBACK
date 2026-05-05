@@ -1,0 +1,44 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: recetas_mysql
+    environment:
+      MYSQL_DATABASE: recetas_db
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: recetas_user
+      MYSQL_PASSWORD: password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./entrega-final
+    container_name: recetas_backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/recetas_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: recetas_user
+      SPRING_DATASOURCE_PASSWORD: password
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build: ./entrega-final-frontend
+    container_name: recetas_frontend
+    depends_on:
+      - backend
+    environment:
+      BACKEND_BASE-URL: http://backend:8080
+    ports:
+      - "8081:8081"
+
+volumes:
+  mysql_data:
