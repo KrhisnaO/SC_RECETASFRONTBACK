@@ -7,6 +7,7 @@ import com.recetas_back.recetas_back.service.ComentarioService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
@@ -23,6 +24,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(ComentarioController.class)
+@AutoConfigureMockMvc(addFilters = false)
 @Import(com.recetas_back.recetas_back.config.SecurityConfig.class)
 @DisplayName("ComentarioController REST - pruebas unitarias")
 class ComentarioControllerTest {

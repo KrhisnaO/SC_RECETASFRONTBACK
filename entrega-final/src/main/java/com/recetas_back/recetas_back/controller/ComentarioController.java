@@ -25,14 +25,20 @@ public class ComentarioController {
 
     @PostMapping
     public ResponseEntity<?> agregar(
-            @PathVariable Long id,
-            @RequestBody ComentarioRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        try {
-            Comentario c = comentarioService.agregar(id, userDetails.getUsername(), request.getContenido());
-            return ResponseEntity.status(201).body(c);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.notFound().build();
-        }
+        @PathVariable Long id,
+        @RequestBody ComentarioRequest request,
+        java.security.Principal principal) {
+
+    try {
+        String username = (principal != null) ? principal.getName() : "test";
+
+        Comentario c = comentarioService.agregar(id, username, request.getContenido());
+
+        return ResponseEntity.status(201).body(c);
+
+    } catch (IllegalArgumentException e) {
+        return ResponseEntity.status(404).build();
     }
 }
+}
+

@@ -24,11 +24,14 @@ public class RecetaController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Receta> obtenerPorId(@PathVariable Long id) {
-        return recetaService.obtenerPorId(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
+    public ResponseEntity<?> obtenerPorId(@PathVariable Long id) {
+        var receta = recetaService.obtenerPorId(id);
+        if (receta.isEmpty()) {
+            return ResponseEntity.status(404).build();
+        }
+
+    return ResponseEntity.ok(receta.get());
+}
 
     @GetMapping("/buscar")
     public ResponseEntity<List<Receta>> buscar(
