@@ -742,3 +742,21 @@ footer {
     margin-top: 4rem;
     font-size: 0.9rem;
 }
+
+.share-container {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+}
+
+.share-label {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.btn-outline {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+}

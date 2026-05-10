@@ -11,21 +11,40 @@
   <header th:fragment="header">
     <nav class="navbar">
       <div class="logo"><a th:href="@{/home}">Recetas Premium</a></div>
+
       <ul class="nav-links">
         <li><a th:href="@{/home}">Inicio</a></li>
         <li><a th:href="@{/buscar}">Buscar</a></li>
+        <li th:if="${session.JWT_TOKEN != null}">
+          <a th:href="@{/publicar}">Publicar</a>
+        </li>
+        <li th:if="${session.JWT_TOKEN != null}">
+          <a th:href="@{/favoritos}">Mis Favoritos</a>
+        </li>
       </ul>
+
       <div class="auth-buttons">
         <th:block th:if="${session.JWT_TOKEN == null}">
-          <a th:href="@{/login}" class="btn btn-primary">Iniciar Sesión</a>
+          <a th:href="@{/registro}" class="btn btn-outline">Registrarse</a>
+          <a th:href="@{/login}"    class="btn btn-primary">Iniciar Sesion</a>
         </th:block>
+
         <div th:if="${session.JWT_TOKEN != null}" class="user-menu">
-          <span class="username-badge" th:text="${session.USERNAME}"></span>
-          <a th:href="@{/logout}" class="btn btn-outline">Cerrar Sesión</a>
+          <a th:href="@{/perfil}" class="username-badge" th:text="${session.USERNAME}">usuario</a>
+
+          <a th:if="${session.IS_ADMIN}"
+             th:href="@{/admin}"
+             class="btn btn-outline"
+             style="font-size:.8rem; padding:.3rem .7rem; background:#6c3483; color:#fff; border-color:#6c3483;">
+            Panel Admin
+          </a>
+
+          <a th:href="@{/logout}" class="btn btn-outline">Cerrar Sesion</a>
         </div>
       </div>
     </nav>
   </header>
+
   <footer th:fragment="footer">
     <p>&copy; 2026 Recetas Premium. Todos los derechos reservados.</p>
   </footer>

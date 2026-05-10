@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Panel Admin - Recetas Premium')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+
+<main>
+  <div class="admin-wrapper">
+    <h2 class="section-heading" style="text-align:left; margin-bottom:2rem;">Panel de Administracion</h2>
+
+    <nav class="admin-tabs">
+      <a href="#usuarios"    class="admin-tab-link">Usuarios</a>
+      <a href="#comentarios" class="admin-tab-link">Comentarios</a>
+      <a href="#recetas"     class="admin-tab-link">Recetas</a>
+    </nav>
+
+    <!-- USUARIOS -->
+    <section id="usuarios" class="admin-section">
+      <h3 class="admin-section-title">Gestion de Usuarios</h3>
+      <p class="admin-section-desc">Cambia el rol de un usuario o elimina su cuenta.</p>
+
+      <div th:if="${usuarios == null or usuarios.isEmpty()}" class="no-results">
+        <p>No hay usuarios registrados.</p>
+      </div>
+
+      <div th:if="${usuarios != null and !usuarios.isEmpty()}" class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Usuario</th>
+              <th>Nombre</th>
+              <th>Correo</th>
+              <th>Rol actual</th>
+              <th>Cambiar rol</th>
+              <th>Eliminar</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="u : ${usuarios}">
+              <td th:text="${u['id']}"></td>
+              <td th:text="${u['username']}"></td>
+              <td th:text="${u['nombre'] != null ? u['nombre'] : '—'}"></td>
+              <td th:text="${u['correo'] != null ? u['correo'] : '—'}"></td>
+              <td>
+                <span class="role-badge"
+                      th:classappend="${u['role'] == 'ROLE_ADMIN'} ? 'role-badge--admin' : 'role-badge--user'"
+                      th:text="${u['role']}"></span>
+              </td>
+              <td>
+                <form th:action="@{/admin/usuarios/{id}/cambiar-rol(id=${u['id']})}" method="post"
+                      style="display:flex; gap:.5rem; align-items:center;">
+                  <select name="role" class="form-control" style="font-size:.8rem; padding:.3rem .5rem; width:auto;">
+                    <option value="ROLE_USER"  th:selected="${u['role'] == 'ROLE_USER'}">ROLE_USER</option>
+                    <option value="ROLE_ADMIN" th:selected="${u['role'] == 'ROLE_ADMIN'}">ROLE_ADMIN</option>
+                  </select>
+                  <button type="submit" class="btn-admin btn-admin--ok">Guardar</button>
+                </form>
+              </td>
+              <td>
+                <form th:action="@{/admin/usuarios/{id}/eliminar(id=${u['id']})}"
+                      method="post"
+                      onsubmit="return confirm('Eliminar este usuario? Esta accion es irreversible.')">
+                  <button type="submit" class="btn-admin btn-admin--danger">
+                    Eliminar
+                  </button>
+                </form>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- COMENTARIOS -->
+    <section id="comentarios" class="admin-section" style="margin-top:2rem;">
+      <h3 class="admin-section-title">Moderacion de Comentarios</h3>
+      <p class="admin-section-desc">Elimina comentarios ofensivos o inapropiados.</p>
+
+      <div th:if="${comentarios == null or comentarios.isEmpty()}" class="no-results">
+        <p>No hay comentarios publicados.</p>
+      </div>
+
+      <div th:if="${comentarios != null and !comentarios.isEmpty()}" class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Usuario</th>
+              <th>Receta</th>
+              <th>Contenido</th>
+              <th>Fecha</th>
+              <th>Accion</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="c : ${comentarios}">
+              <td th:text="${c['id']}"></td>
+              <td th:text="${c['usuario']}"></td>
+              <td>
+                <a th:href="@{/receta/{id}(id=${c['recetaId']})}"
+                   th:text="${c['recetaNombre'] != null and !#strings.isEmpty(c['recetaNombre'].toString()) ? c['recetaNombre'] : 'Ver receta'}"
+                   style="color:var(--primary);"></a>
+              </td>
+              <td style="max-width:280px; word-break:break-word;" th:text="${c['contenido']}"></td>
+              <td style="white-space:nowrap; font-size:.8rem; color:var(--text-muted);"
+                  th:text="${c['createdAt'] != null ? #strings.substring(c['createdAt'].toString(), 0, 10) : ''}"></td>
+              <td>
+                <form th:action="@{/admin/comentarios/{id}/eliminar(id=${c['id']})}"
+                      method="post"
+                      onsubmit="return confirm('Eliminar este comentario?')">
+                  <button type="submit" class="btn-admin btn-admin--danger">Eliminar</button>
+                </form>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- RECETAS -->
+    <section id="recetas" class="admin-section" style="margin-top:2rem;">
+      <h3 class="admin-section-title">Gestion de Recetas</h3>
+      <p class="admin-section-desc">Elimina recetas que infrinjan las normas de la comunidad.</p>
+
+      <div th:if="${recetas == null or recetas.isEmpty()}" class="no-results">
+        <p>No hay recetas publicadas.</p>
+      </div>
+
+      <div th:if="${recetas != null and !recetas.isEmpty()}" class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nombre</th>
+              <th>Pais</th>
+              <th>Dificultad</th>
+              <th>Ver</th>
+              <th>Eliminar</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="r : ${recetas}">
+              <td th:text="${r['id']}"></td>
+              <td th:text="${r['nombre']}"></td>
+              <td th:text="${r['pais'] != null ? r['pais'] : '—'}"></td>
+              <td th:text="${r['dificultad'] != null ? r['dificultad'] : '—'}"></td>
+              <td>
+                <a th:href="@{/receta/{id}(id=${r['id']})}"
+                   class="btn-admin btn-admin--neutral">Ver</a>
+              </td>
+              <td>
+                <form th:action="@{/admin/recetas/{id}/eliminar(id=${r['id']})}"
+                      method="post"
+                      onsubmit="return confirm('Eliminar esta receta? Esta accion es irreversible.')">
+                  <button type="submit" class="btn-admin btn-admin--danger">Eliminar</button>
+                </form>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+
+<style>
+  .admin-wrapper {
+    max-width: 1050px;
+    margin: 2.5rem auto;
+    padding: 0 1.5rem 4rem;
+  }
+  .admin-tabs {
+    display: flex;
+    gap: .75rem;
+    margin-bottom: 2rem;
+    border-bottom: 2px solid var(--border);
+    padding-bottom: .75rem;
+  }
+  .admin-tab-link {
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: .9rem;
+    text-decoration: none;
+    padding: .3rem .1rem;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: color .2s, border-color .2s;
+  }
+  .admin-tab-link:hover { color: var(--primary); border-color: var(--primary); }
+  .admin-section {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: var(--shadow);
+  }
+  .admin-section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.2rem;
+    color: var(--dark);
+    margin-bottom: .5rem;
+    padding-bottom: .75rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .admin-section-desc { font-size: .875rem; color: var(--text-muted); margin-bottom: 1.25rem; }
+  .admin-table-wrap { overflow-x: auto; }
+  .admin-table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+  .admin-table th {
+    text-align: left;
+    padding: .6rem .75rem;
+    background: var(--cream);
+    color: var(--text-muted);
+    font-weight: 600;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  .admin-table td { padding: .65rem .75rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .admin-table tr:last-child td { border-bottom: none; }
+  .role-badge { display: inline-block; padding: .2rem .65rem; border-radius: 6px; font-size: .75rem; font-weight: 700; }
+  .role-badge--admin { background: #f0e0ff; color: #6c3483; }
+  .role-badge--user  { background: var(--sage-light); color: #555; }
+  .btn-admin {
+    display: inline-block;
+    padding: .3rem .75rem;
+    border-radius: 6px;
+    font-size: .8rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1.5px solid transparent;
+    white-space: nowrap;
+    transition: background .2s, color .2s;
+    text-decoration: none;
+    background: transparent;
+  }
+  .btn-admin--danger  { border-color: #c0392b; color: #c0392b; }
+  .btn-admin--danger:hover { background: #c0392b; color: #fff; }
+  .btn-admin--ok      { border-color: var(--primary); color: var(--primary); }
+  .btn-admin--ok:hover { background: var(--primary); color: #fff; }
+  .btn-admin--neutral { border-color: var(--text-muted); color: var(--text-muted); }
+  .btn-admin--neutral:hover { background: var(--text-muted); color: #fff; }
+</style>
+</body>
+</html>

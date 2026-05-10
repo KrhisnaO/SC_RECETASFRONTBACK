@@ -1,42 +1,125 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-
-<head th:replace="~{fragments/layout :: head('Home - Recetas Premium')}"></head>
-
+<head th:replace="~{fragments/layout :: head('Inicio - Recetas Premium')}"></head>
 <body>
-    <header th:replace="~{fragments/layout :: header}"></header>
+<header th:replace="~{fragments/layout :: header}"></header>
 
-    <main>
-        <section class="hero">
-            <div class="hero-content">
-                <h1>Descubre tu proxima aventura culinaria</h1>
-                <p>Las mejores recetas del mundo en tu mesa.</p>
-                <a th:href="@{/buscar}" class="btn btn-lg btn-primary">Explorar Recetas</a>
-            </div>
-        </section>
+<main>
+  <section class="hero">
+    <div class="hero-content">
+      <h1>Descubre tu proxima aventura culinaria</h1>
+      <p>Las mejores recetas del mundo en tu mesa.</p>
+      <a th:href="@{/buscar}" class="btn btn-lg btn-primary">Explorar Recetas</a>
+    </div>
+  </section>
 
-        <section class="recipes-grid-section">
-            <h2 class="section-heading">Recetas Premium</h2>
-            <div class="grid">
-                <div th:each="receta : ${recetas}" class="card recipe-card">
-                    <div class="card-img" th:style="'background-image: url(' + ${receta.imagenUrl} + ');'"></div>
-                    <div class="card-content">
-                        <span class="badge" th:text="${receta.tipoCocina}">Cocina</span>
-                        <h3 th:text="${receta.nombre}">Nombre Receta</h3>
-                        <p th:text="${receta.descripcion}">Descripcion rapida.</p>
-                        <div class="card-meta">
-                            <span><span th:text="${receta.tiempoPrepMinutos} + ' min'"></span></span>
-                            <span><span th:text="${receta.dificultad}"></span></span>
-                        </div>
-                        <a th:href="@{/receta/{id}(id=${receta.id})}" class="btn btn-outline btn-block">Ver Detalles
-                            Completos</a>
-                    </div>
-                </div>
-            </div>
-        </section>
-    </main>
+  <div th:if="${param.publicado}"
+       style="max-width:900px; margin:1.5rem auto; padding:1rem 1.5rem;
+              background:#d4edda; border:1px solid #c3e6cb; border-radius:8px;
+              color:#155724; font-weight:500;">
+    Tu receta fue publicada exitosamente.
+  </div>
 
-    <footer th:replace="~{fragments/layout :: footer}"></footer>
+  <section class="banner-section">
+    <div class="banner-grid">
+      <div class="banner-card">
+        <div class="banner-tag">Patrocinado</div>
+        <strong>Cocina Gourmet</strong>
+        <p>Utensilios premium para chefs en casa. Envio gratis en tu primera compra.</p>
+        <a href="#" class="banner-link">Ver ofertas</a>
+      </div>
+      <div class="banner-card">
+        <div class="banner-tag">Patrocinado</div>
+        <strong>FrescoMar Supermercado</strong>
+        <p>Ingredientes frescos a domicilio. Usa el codigo RECETAS10 y obtiene 10% de descuento.</p>
+        <a href="#" class="banner-link">Ir a la tienda</a>
+      </div>
+      <div class="banner-card">
+        <div class="banner-tag">Patrocinado</div>
+        <strong>Academia Culinaria Online</strong>
+        <p>Aprende con chefs profesionales desde casa. Primera clase completamente gratis.</p>
+        <a href="#" class="banner-link">Empezar ahora</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="recipes-grid-section">
+    <h2 class="section-heading">Recetas Destacadas</h2>
+    <div class="grid">
+      <div th:each="receta : ${recetas}" class="card recipe-card">
+        <div class="card-img"
+             th:style="'background-image: url(' + ${receta.imagenUrl} + ');'"></div>
+        <div class="card-content">
+          <span class="badge" th:text="${receta.tipoCocina}">Cocina</span>
+          <h3 th:text="${receta.nombre}">Nombre Receta</h3>
+          <p th:text="${receta.descripcion}">Descripcion.</p>
+          <div class="card-meta">
+            <span th:text="${receta.tiempoPrepMinutos} + ' min'"></span>
+            <span th:text="${receta.dificultad}"></span>
+          </div>
+          <a th:href="@{/receta/{id}(id=${receta.id})}"
+             class="btn btn-outline btn-block">Ver Detalles</a>
+        </div>
+      </div>
+    </div>
+
+    <div th:if="${recetas == null or recetas.isEmpty()}"
+         style="text-align:center; padding:3rem; color:#666;">
+      <p>No hay recetas disponibles. Se el primero en publicar una.</p>
+      <a th:if="${session.JWT_TOKEN != null}"
+         th:href="@{/publicar}" class="btn btn-primary" style="margin-top:1rem">Publicar Receta</a>
+    </div>
+  </section>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+
+<style>
+  .banner-section {
+    padding: 1.5rem 5%;
+    background: var(--cream);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .banner-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  .banner-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    position: relative;
+  }
+  .banner-tag {
+    font-size: .7rem;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--text-muted);
+    margin-bottom: .5rem;
+  }
+  .banner-card strong {
+    display: block;
+    color: var(--primary);
+    margin-bottom: .4rem;
+    font-size: 1rem;
+  }
+  .banner-card p {
+    font-size: .875rem;
+    color: var(--text-muted);
+    margin-bottom: .75rem;
+    line-height: 1.5;
+  }
+  .banner-link {
+    font-size: .85rem;
+    font-weight: 600;
+    color: var(--primary);
+    text-decoration: underline;
+  }
+</style>
 </body>
-
 </html>

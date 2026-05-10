@@ -21,7 +21,7 @@ class DtoTest {
     @Test
     @DisplayName("LoginResponse: constructor y getters funcionan")
     void loginResponse() {
-        LoginResponse r = new LoginResponse("eyJ.token", "admin");
+        LoginResponse r = new LoginResponse("eyJ.token", "admin", "ROLE_USER");
         assertThat(r.getToken()).isEqualTo("eyJ.token");
         assertThat(r.getUsername()).isEqualTo("admin");
     }

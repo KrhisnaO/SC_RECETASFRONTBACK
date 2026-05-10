@@ -9,6 +9,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import org.springframework.http.HttpStatus;
 
 /** API REST de Comentarios. GET público, POST privado (requiere JWT). */
 @RestController
@@ -30,7 +31,10 @@ public class ComentarioController {
         java.security.Principal principal) {
 
     try {
-        String username = (principal != null) ? principal.getName() : "test";
+         if (principal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        String username = principal.getName();
 
         Comentario c = comentarioService.agregar(id, username, request.getContenido());
 

@@ -9,6 +9,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import java.util.Map;
+import org.springframework.http.HttpStatus;
 
 /** API REST de Valoraciones. POST privado (requiere JWT). */
 @RestController
@@ -35,7 +36,10 @@ public class ValoracionController {
         java.security.Principal principal) {
 
     try {
-        String username = (principal != null) ? principal.getName() : "test";
+        if (principal == null) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    }
+        String username = principal.getName();
 
         Valoracion v = valoracionService.guardarOActualizar(
                 id,

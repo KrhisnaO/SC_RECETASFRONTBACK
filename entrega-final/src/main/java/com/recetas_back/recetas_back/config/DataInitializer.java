@@ -16,19 +16,19 @@ public class DataInitializer {
             if (usuarioRepository.count() == 0) {
                 Usuario admin = new Usuario();
                 admin.setUsername("admin");
-                admin.setPassword(passwordEncoder.encode("password"));
+                admin.setPassword(passwordEncoder.encode("PasswordAdmin1"));
                 admin.setRole("ROLE_ADMIN");
                 usuarioRepository.save(admin);
 
                 Usuario carlos = new Usuario();
                 carlos.setUsername("carlos");
-                carlos.setPassword(passwordEncoder.encode("password"));
+                carlos.setPassword(passwordEncoder.encode("PasswordUser1"));
                 carlos.setRole("ROLE_EDITOR");
                 usuarioRepository.save(carlos);
 
                 Usuario maria = new Usuario();
                 maria.setUsername("maria");
-                maria.setPassword(passwordEncoder.encode("password"));
+                maria.setPassword(passwordEncoder.encode("PasswordUser2"));
                 maria.setRole("ROLE_USER");
                 usuarioRepository.save(maria);
             }

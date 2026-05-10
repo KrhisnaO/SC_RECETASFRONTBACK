@@ -11,6 +11,7 @@
         <h1 class="detail-title" th:text="${receta.nombre}">Titulo</h1>
       </div>
     </div>
+
     <div class="detail-content">
       <div class="meta-tags">
         <span class="meta-tag" th:text="${receta.pais}"></span>
@@ -18,7 +19,38 @@
         <span class="meta-tag" th:text="${receta.tiempoPrepMinutos} + ' min'"></span>
         <span class="meta-tag" th:text="${receta.dificultad}"></span>
       </div>
+
       <p class="detail-description" th:text="${receta.descripcion}"></p>
+
+      <div style="display:flex; gap:1rem; flex-wrap:wrap; margin:1.5rem 0;">
+
+        <th:block th:if="${session.JWT_TOKEN != null}">
+          <form th:if="${esFavorito}"
+                th:action="@{/favoritos/{id}/eliminar(id=${receta.id})}" method="post">
+            <button type="submit" class="btn btn-primary"
+                    style="background:#e67e22; border-color:#e67e22;">
+              Quitar de favoritos
+            </button>
+          </form>
+          <form th:if="${!esFavorito}"
+                th:action="@{/favoritos/{id}/agregar(id=${receta.id})}" method="post">
+            <button type="submit" class="btn btn-outline">
+              Agregar a favoritos
+            </button>
+          </form>
+        </th:block>
+
+        <!-- BOTONES PARA COMPARTIR -->
+        <div class="share-container">
+          <span class="share-label">Compartir:</span>
+          <button class="btn btn-outline" onclick="compartirWhatsApp()">WhatsApp</button>
+          <button class="btn btn-outline" onclick="compartirTwitter()">Twitter</button>
+          <button class="btn btn-outline" onclick="compartirFacebook()">Facebook</button>
+          <button class="btn btn-outline" onclick="copiarEnlace()">Copiar enlace</button>
+        </div>
+
+      </div>
+
       <div class="grid-2">
         <div>
           <h3 class="sub-section-title">Ingredientes</h3>
@@ -30,14 +62,12 @@
         </div>
         <div>
           <h3 class="sub-section-title">Instrucciones</h3>
-          <!-- th:text escapa HTML → SAST Fix XSS -->
           <div class="instructions-list" th:text="${receta.instrucciones}"></div>
         </div>
       </div>
 
       <hr class="section-divider">
 
-      <!-- Galería multimedia -->
       <div class="media-section" th:if="${receta.elementosMedia != null and !receta.elementosMedia.isEmpty()}">
         <h3 class="section-title">Galería Multimedia</h3>
         <div class="media-gallery">
@@ -50,14 +80,12 @@
 
       <hr class="section-divider">
 
-      <!-- Valoraciones -->
       <div class="rating-section">
         <h3 class="section-title">Valoración</h3>
         <div class="rating-display">
           <span class="score" th:text="${promedioValoracion}">0.0</span>
           <span class="count" th:text="'(' + ${totalValoraciones} + ' valoraciones)'"></span>
         </div>
-        <!-- Formulario autenticado hacia ruta del FRONTEND -->
         <form th:if="${session.JWT_TOKEN != null}"
               th:action="@{/receta/{id}/valorar(id=${receta.id})}" method="post">
           <div class="star-input">
@@ -73,7 +101,6 @@
 
       <hr class="section-divider">
 
-      <!-- Comentarios -->
       <div class="comments-section">
         <h3 class="section-title">Comentarios
           <span th:text="'(' + ${comentarios.size()} + ')'" class="comment-count"></span>
@@ -81,19 +108,21 @@
 
         <form th:if="${session.JWT_TOKEN != null}"
               th:action="@{/receta/{id}/comentar(id=${receta.id})}" method="post" class="comment-form">
-          <textarea name="contenido" class="form-control" placeholder="Escribe tu comentario..." required minlength="3"></textarea>
+          <textarea name="contenido" class="form-control"
+                    placeholder="Escribe tu comentario..." required minlength="3"></textarea>
           <button type="submit" class="btn btn-primary">Publicar Comentario</button>
         </form>
 
         <div th:if="${session.JWT_TOKEN == null}" class="anon-prompt">
-          <p>Inicia sesión para comentar y valorar</p>
+          <p>Inicia sesión para comentar, valorar y guardar favoritos</p>
           <a th:href="@{/login}" class="btn btn-primary">Iniciar Sesión</a>
         </div>
 
         <div class="comment-list">
           <div th:each="c : ${comentarios}" class="comment-card">
             <div class="comment-header">
-              <span class="comment-author" th:text="${c.usuario != null ? c.usuario.username : 'Usuario'}"></span>
+              <span class="comment-author"
+                    th:text="${c.usuario != null ? c.usuario.username : 'Usuario'}"></span>
             </div>
             <p class="comment-body" th:text="${c.contenido}"></p>
           </div>
@@ -104,5 +133,33 @@
   </div>
 </main>
 <footer th:replace="~{fragments/layout :: footer}"></footer>
+
+<script>
+  var recetaNombre = [[${receta.nombre}]];
+
+  function getUrl() {
+    return window.location.href;
+  }
+
+  function compartirWhatsApp() {
+    var url = 'https://wa.me/?text=' + encodeURIComponent('Mira esta receta: ' + recetaNombre + ' ' + getUrl());
+    window.open(url, '_blank');
+  }
+
+  function compartirTwitter() {
+    var url = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent('Mira esta receta: ' + recetaNombre) + '&url=' + encodeURIComponent(getUrl());
+    window.open(url, '_blank');
+  }
+
+  function compartirFacebook() {
+    var url = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(getUrl());
+    window.open(url, '_blank');
+  }
+
+  function copiarEnlace() {
+    navigator.clipboard.writeText(getUrl())
+      .then(function() { alert('Enlace copiado correctamente'); });
+  }
+</script>
 </body>
 </html>

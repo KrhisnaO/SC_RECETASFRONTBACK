@@ -15,4 +15,11 @@ class RecetasBackApplicationTests {
     void contextLoads() {
         // Verifica que todos los beans se inicializan correctamente
     }
+
+    @Test
+    @DisplayName("El método main arranca la aplicación sin errores")
+    void main_arrancaSinErrores() {
+        // Llama al main para cubrir esa línea en Jacoco
+        RecetasBackApplication.main(new String[]{});
+    }
 }

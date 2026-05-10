@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Mi Perfil - Recetas Premium')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+
+<main>
+  <div class="perfil-container">
+
+    <div th:if="${param.actualizado}"
+         style="background:#d4edda; border:1px solid #c3e6cb; border-radius:8px;
+                padding:.9rem 1.25rem; margin-bottom:1.5rem; color:#155724; font-weight:500;">
+      Perfil actualizado correctamente.
+    </div>
+    <div th:if="${param.passwordCambiado}"
+         style="background:#d4edda; border:1px solid #c3e6cb; border-radius:8px;
+                padding:.9rem 1.25rem; margin-bottom:1.5rem; color:#155724; font-weight:500;">
+      Contraseña cambiada correctamente.
+    </div>
+
+    <div class="perfil-grid">
+
+      <div class="perfil-card">
+        <h2 class="perfil-card-title">Mis datos</h2>
+
+        <div class="perfil-info-row">
+          <span class="perfil-info-label">Usuario</span>
+          <span class="perfil-info-value" th:text="${perfil['username']}"></span>
+        </div>
+        <div class="perfil-info-row">
+          <span class="perfil-info-label">Nombre</span>
+          <span class="perfil-info-value"
+                th:text="${perfil['nombre'] != null and perfil['nombre'] != '' ? perfil['nombre'] : '—'}"></span>
+        </div>
+        <div class="perfil-info-row">
+          <span class="perfil-info-label">Correo</span>
+          <span class="perfil-info-value"
+                th:text="${perfil['correo'] != null and perfil['correo'] != '' ? perfil['correo'] : '—'}"></span>
+        </div>
+
+        <div th:if="${errorPerfil}"
+             style="margin-top:1rem; color:#c0392b; font-size:.875rem;"
+             th:text="${errorPerfil}"></div>
+
+        <form th:action="@{/perfil/actualizar}" method="post" style="margin-top:1.5rem;">
+          <div class="form-group">
+            <label for="nombre">Nombre completo</label>
+            <input type="text" id="nombre" name="nombre" class="form-control"
+                   th:value="${perfil['nombre']}" placeholder="Tu nombre" maxlength="100">
+          </div>
+          <div class="form-group">
+            <label for="correo">Correo electronico</label>
+            <input type="email" id="correo" name="correo" class="form-control"
+                   th:value="${perfil['correo']}" placeholder="tu@correo.com" maxlength="100">
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Guardar cambios</button>
+        </form>
+      </div>
+
+      <div class="perfil-card">
+        <h2 class="perfil-card-title">Cambiar contraseña</h2>
+
+        <div th:if="${errorPassword}"
+             style="background:#fdf0ef; border:1px solid #f5b7b1; border-radius:8px;
+                    padding:.8rem 1rem; margin-bottom:1rem; color:#c0392b; font-size:.875rem;"
+             th:text="${errorPassword}"></div>
+
+        <form th:action="@{/perfil/cambiar-password}" method="post">
+          <div class="form-group">
+            <label for="passwordActual">Contraseña actual</label>
+            <input type="password" id="passwordActual" name="passwordActual" class="form-control"
+                   placeholder="Tu contraseña actual" required>
+          </div>
+          <div class="form-group">
+            <label for="passwordNueva">Nueva contraseña</label>
+            <input type="password" id="passwordNueva" name="passwordNueva" class="form-control"
+                   placeholder="Minimo 6 caracteres" required minlength="6">
+          </div>
+          <div class="form-group">
+            <label for="passwordNuevaConfirm">Confirmar nueva contraseña</label>
+            <input type="password" id="passwordNuevaConfirm" name="passwordNuevaConfirm" class="form-control"
+                   placeholder="Repite la nueva contraseña" required minlength="6">
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Cambiar contraseña</button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+
+<style>
+  .perfil-container {
+    max-width: 900px;
+    margin: 3rem auto;
+    padding: 0 1.5rem 4rem;
+  }
+  .perfil-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+  @media (max-width: 700px) {
+    .perfil-grid { grid-template-columns: 1fr; }
+  }
+  .perfil-card {
+    background: var(--white);
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+  }
+  .perfil-card-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.25rem;
+    color: var(--dark);
+    margin-bottom: 1.5rem;
+    padding-bottom: .75rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .perfil-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: .65rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .perfil-info-row:last-of-type { border-bottom: none; }
+  .perfil-info-label {
+    font-size: .85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+  .perfil-info-value {
+    font-size: .95rem;
+    color: var(--dark);
+  }
+</style>
+</body>
+</html>

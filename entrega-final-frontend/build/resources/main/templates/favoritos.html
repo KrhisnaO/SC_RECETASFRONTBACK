@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Mis Favoritos - Recetas Premium')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main>
+  <div class="search-container">
+    <h2 class="section-heading">Mis Recetas Favoritas</h2>
+  </div>
+
+  <section class="recipes-grid-section" th:if="${recetas != null and !recetas.isEmpty()}">
+    <div class="grid">
+      <div th:each="receta : ${recetas}" class="card recipe-card">
+        <div class="card-img" th:style="'background-image: url(' + ${receta.imagenUrl} + ');'"></div>
+        <div class="card-content">
+          <span class="badge" th:text="${receta.tipoCocina}">Cocina</span>
+          <h3 th:text="${receta.nombre}">Nombre Receta</h3>
+          <p th:text="${receta.descripcion}">Descripción.</p>
+          <div class="card-meta">
+            <span th:text="${receta.tiempoPrepMinutos} + ' min'"></span>
+            <span th:text="${receta.dificultad}"></span>
+          </div>
+          <div style="display:flex; gap:.5rem; margin-top:.8rem;">
+            <a th:href="@{/receta/{id}(id=${receta.id})}" class="btn btn-outline btn-block">Ver Receta</a>
+            <form th:action="@{/favoritos/{id}/eliminar(id=${receta.id})}" method="post">
+              <button type="submit" class="btn btn-primary" style="background:#e74c3c; border-color:#e74c3c;">
+                Quitar
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div th:if="${recetas == null or recetas.isEmpty()}" class="no-results" style="text-align:center; padding:4rem 2rem;">
+    <h3>Aún no tienes recetas favoritas</h3>
+    <p style="color:#666; margin-bottom:1.5rem;">
+      Guarda recetas para acceder rápidamente a ellas desde esta sección.
+    </p>
+    <a th:href="@{/buscar}" class="btn btn-primary">Explorar Recetas</a>
+  </div>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>
