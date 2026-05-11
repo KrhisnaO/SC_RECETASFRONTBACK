@@ -51,6 +51,68 @@ public class ApiClient {
         return resp.getBody() != null ? resp.getBody() : List.of();
     }
 
+    public List<RecetaDTO> obtenerRecientes(int limite) {
+        try {
+            ResponseEntity<List<RecetaDTO>> resp = restTemplate.exchange(
+                    backendUrl + "/api/recetas/recientes?limite=" + limite,
+                    HttpMethod.GET, null,
+                    new ParameterizedTypeReference<List<RecetaDTO>>() {});
+            return resp.getBody() != null ? resp.getBody() : List.of();
+        } catch (Exception e) { return List.of(); }
+    }
+
+    public List<RecetaDTO> obtenerPopulares(int limite) {
+        try {
+            ResponseEntity<List<RecetaDTO>> resp = restTemplate.exchange(
+                    backendUrl + "/api/recetas/populares?limite=" + limite,
+                    HttpMethod.GET, null,
+                    new ParameterizedTypeReference<List<RecetaDTO>>() {});
+            return resp.getBody() != null ? resp.getBody() : List.of();
+        } catch (Exception e) { return List.of(); }
+    }
+
+    public List<BannerDTO> obtenerBanners() {
+        try {
+            ResponseEntity<List<BannerDTO>> resp = restTemplate.exchange(
+                    backendUrl + "/api/banners", HttpMethod.GET, null,
+                    new ParameterizedTypeReference<List<BannerDTO>>() {});
+            return resp.getBody() != null ? resp.getBody() : List.of();
+        } catch (Exception e) { return List.of(); }
+    }
+
+    public List<BannerDTO> listarBannersAdmin(String token) {
+        try {
+            ResponseEntity<List<BannerDTO>> resp = restTemplate.exchange(
+                    backendUrl + "/api/banners/admin", HttpMethod.GET, bearerEntity(token),
+                    new ParameterizedTypeReference<List<BannerDTO>>() {});
+            return resp.getBody() != null ? resp.getBody() : List.of();
+        } catch (Exception e) { return List.of(); }
+    }
+
+    public boolean crearBannerAdmin(String titulo, String empresa, String imagenUrl,
+                                     String enlaceUrl, Boolean activo, Integer orden, String token) {
+        try {
+            String body = String.format(
+                    "{\"titulo\":\"%s\",\"empresa\":\"%s\",\"imagenUrl\":\"%s\"," +
+                    "\"enlaceUrl\":\"%s\",\"activo\":%s,\"orden\":%d}",
+                    esc(q(titulo)), esc(q(empresa)), esc(q(imagenUrl)),
+                    esc(q(enlaceUrl)),
+                    activo != null ? activo.toString() : "true",
+                    orden != null ? orden : 0);
+            ResponseEntity<String> resp = restTemplate.postForEntity(
+                    backendUrl + "/api/banners", jsonEntity(body, token), String.class);
+            return resp.getStatusCode().is2xxSuccessful();
+        } catch (Exception e) { return false; }
+    }
+
+    public boolean eliminarBannerAdmin(Long id, String token) {
+        try {
+            restTemplate.exchange(backendUrl + "/api/banners/" + id,
+                    HttpMethod.DELETE, bearerEntity(token), String.class);
+            return true;
+        } catch (Exception e) { return false; }
+    }
+
     @SuppressWarnings("unchecked")
     public String publicarReceta(String nombre, String tipoCocina, String pais, String dificultad,
                                   Integer tiempoPrep, String descripcion, String instrucciones,
@@ -73,6 +135,50 @@ public class ApiClient {
         }
     }
 
+    @SuppressWarnings("unchecked")
+    public Long publicarRecetaYObtenerId(String nombre, String tipoCocina, String pais, String dificultad,
+                                          Integer tiempoPrep, String descripcion, String instrucciones,
+                                          String ingredientes, String imagenUrl, String token) {
+        try {
+            String body = String.format(
+                    "{\"nombre\":\"%s\",\"tipoCocina\":\"%s\",\"pais\":\"%s\",\"dificultad\":\"%s\"," +
+                    "\"tiempoPrepMinutos\":%d,\"descripcion\":\"%s\",\"instrucciones\":\"%s\"," +
+                    "\"ingredientes\":\"%s\",\"imagenUrl\":\"%s\"}",
+                    esc(nombre), esc(q(tipoCocina)), esc(q(pais)), esc(q(dificultad)),
+                    tiempoPrep != null ? tiempoPrep : 0,
+                    esc(q(descripcion)), esc(q(instrucciones)), esc(q(ingredientes)), esc(q(imagenUrl)));
+            ResponseEntity<Map> resp = restTemplate.postForEntity(
+                    backendUrl + "/api/recetas", jsonEntity(body, token), Map.class);
+            if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
+                Object idVal = resp.getBody().get("id");
+                if (idVal instanceof Number) return ((Number) idVal).longValue();
+            }
+            return null;
+        } catch (Exception e) { return null; }
+    }
+
+    public boolean subirArchivoMultimedia(Long recetaId, org.springframework.web.multipart.MultipartFile archivo,
+                                          String token) {
+        try {
+            HttpHeaders h = new HttpHeaders();
+            h.setContentType(MediaType.MULTIPART_FORM_DATA);
+            if (token != null) h.setBearerAuth(token);
+
+            org.springframework.util.LinkedMultiValueMap<String, Object> body =
+                    new org.springframework.util.LinkedMultiValueMap<>();
+            org.springframework.core.io.ByteArrayResource resource =
+                    new org.springframework.core.io.ByteArrayResource(archivo.getBytes()) {
+                        @Override public String getFilename() { return archivo.getOriginalFilename(); }
+                    };
+            body.add("file", resource);
+
+            ResponseEntity<String> resp = restTemplate.postForEntity(
+                    backendUrl + "/api/recetas/" + recetaId + "/media",
+                    new HttpEntity<>(body, h), String.class);
+            return resp.getStatusCode().is2xxSuccessful();
+        } catch (Exception e) { return false; }
+    }
+
     // Comentarios
 
     public List<ComentarioDTO> obtenerComentarios(Long recetaId) {
@@ -90,6 +196,35 @@ public class ApiClient {
                     jsonEntity("{\"contenido\":\"" + esc(contenido) + "\"}", token), String.class);
             return resp.getStatusCode().is2xxSuccessful();
         } catch (Exception e) { return false; }
+    }
+
+    public record ComentarioResult(String status, String motivo) {}
+
+    @SuppressWarnings("unchecked")
+    public ComentarioResult publicarComentarioDetallado(Long recetaId, String contenido, String token) {
+        try {
+            ResponseEntity<Map> resp = restTemplate.postForEntity(
+                    backendUrl + "/api/recetas/" + recetaId + "/comentarios",
+                    jsonEntity("{\"contenido\":\"" + esc(contenido) + "\"}", token), Map.class);
+            return resp.getStatusCode().is2xxSuccessful()
+                    ? new ComentarioResult("OK", null)
+                    : new ComentarioResult("ERROR", "Respuesta inesperada del servidor.");
+        } catch (HttpClientErrorException e) {
+            if (e.getStatusCode().value() == 400) {
+                try {
+                    Map<String, Object> err = e.getResponseBodyAs(Map.class);
+                    String motivo = err != null && err.get("motivo") != null
+                            ? err.get("motivo").toString()
+                            : "Comentario rechazado por moderación.";
+                    return new ComentarioResult("REJECTED", motivo);
+                } catch (Exception ignored) {
+                    return new ComentarioResult("REJECTED", "Comentario rechazado por moderación.");
+                }
+            }
+            return new ComentarioResult("ERROR", "Error " + e.getStatusCode());
+        } catch (Exception e) {
+            return new ComentarioResult("ERROR", "No se pudo conectar con el servidor.");
+        }
     }
 
     // Valoraciones
@@ -214,6 +349,39 @@ public class ApiClient {
                     new ParameterizedTypeReference<List<Map<String, Object>>>() {});
             return resp.getBody() != null ? resp.getBody() : List.of();
         } catch (Exception e) { return List.of(); }
+    }
+
+    public List<Map<String, Object>> listarComentariosPorEstado(String estado, String token) {
+        try {
+            ResponseEntity<List<Map<String, Object>>> resp = restTemplate.exchange(
+                    backendUrl + "/api/admin/comentarios?estado=" + estado,
+                    HttpMethod.GET, bearerEntity(token),
+                    new ParameterizedTypeReference<List<Map<String, Object>>>() {});
+            return resp.getBody() != null ? resp.getBody() : List.of();
+        } catch (Exception e) { return List.of(); }
+    }
+
+    public boolean aprobarComentarioAdmin(Long id, String token) {
+        try {
+            HttpHeaders h = new HttpHeaders();
+            h.setContentType(MediaType.APPLICATION_JSON);
+            h.setBearerAuth(token);
+            restTemplate.exchange(backendUrl + "/api/admin/comentarios/" + id + "/aprobar",
+                    HttpMethod.PUT, new HttpEntity<>("{}", h), Map.class);
+            return true;
+        } catch (Exception e) { return false; }
+    }
+
+    public boolean rechazarComentarioAdmin(Long id, String motivo, String token) {
+        try {
+            String body = "{\"motivo\":\"" + esc(q(motivo)) + "\"}";
+            HttpHeaders h = new HttpHeaders();
+            h.setContentType(MediaType.APPLICATION_JSON);
+            h.setBearerAuth(token);
+            restTemplate.exchange(backendUrl + "/api/admin/comentarios/" + id + "/rechazar",
+                    HttpMethod.PUT, new HttpEntity<>(body, h), Map.class);
+            return true;
+        } catch (Exception e) { return false; }
     }
 
     public List<Map<String, Object>> listarRecetasAdmin(String token) {

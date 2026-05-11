@@ -17,15 +17,18 @@ CREATE TABLE IF NOT EXISTS recetas (
     descripcion          TEXT,
     instrucciones        TEXT,
     ingredientes         TEXT,
-    imagen_url           VARCHAR(255)
+    imagen_url           VARCHAR(255),
+    created_at           TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS comentarios (
-    id         BIGINT AUTO_INCREMENT PRIMARY KEY,
-    receta_id  BIGINT NOT NULL,
-    usuario_id BIGINT NOT NULL,
-    contenido  TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    id             BIGINT AUTO_INCREMENT PRIMARY KEY,
+    receta_id      BIGINT NOT NULL,
+    usuario_id     BIGINT NOT NULL,
+    contenido      TEXT NOT NULL,
+    estado         VARCHAR(20) NOT NULL DEFAULT 'PENDIENTE',
+    motivo_rechazo VARCHAR(255),
+    created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(receta_id)  REFERENCES recetas(id),
     FOREIGN KEY(usuario_id) REFERENCES usuarios(id)
 );
@@ -57,4 +60,15 @@ CREATE TABLE IF NOT EXISTS favoritos (
     UNIQUE KEY uk_favorito (usuario_id, receta_id),
     FOREIGN KEY(usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
     FOREIGN KEY(receta_id)  REFERENCES recetas(id)  ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS banners (
+    id         BIGINT AUTO_INCREMENT PRIMARY KEY,
+    titulo     VARCHAR(150) NOT NULL,
+    empresa    VARCHAR(150),
+    imagen_url VARCHAR(500) NOT NULL,
+    enlace_url VARCHAR(500),
+    activo     BOOLEAN NOT NULL DEFAULT TRUE,
+    orden      INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

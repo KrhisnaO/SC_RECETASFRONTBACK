@@ -1,6 +1,7 @@
 package com.recetas_back.recetas_back.repository;
 
 import com.recetas_back.recetas_back.model.Receta;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -18,4 +19,14 @@ public interface RecetaRepository extends JpaRepository<Receta, Long> {
             @Param("tipoCocina") String tipoCocina,
             @Param("pais") String pais,
             @Param("dificultad") String dificultad);
+
+    @Query("SELECT r FROM Receta r ORDER BY COALESCE(r.createdAt, CAST('1970-01-01T00:00:00' AS timestamp)) DESC, r.id DESC")
+    List<Receta> findRecientes(Pageable pageable);
+
+    @Query("SELECT r FROM Receta r " +
+            "LEFT JOIN r.valoraciones v " +
+            "GROUP BY r.id " +
+            "ORDER BY (COALESCE(AVG(v.puntuacion), 0) * COUNT(v) + " +
+            "(SELECT COUNT(f) FROM Favorito f WHERE f.receta = r)) DESC, r.id DESC")
+    List<Receta> findPopulares(Pageable pageable);
 }

@@ -104,4 +104,48 @@ class ModelTest {
         assertThat(m.getReceta().getId()).isEqualTo(3L);
         assertThat(m.getCreatedAt()).isEqualTo(ahora);
     }
+
+    @Test @DisplayName("Receta: createdAt funciona")
+    void receta_createdAt() {
+        Receta r = new Receta();
+        LocalDateTime ahora = LocalDateTime.now();
+        r.setCreatedAt(ahora);
+        assertThat(r.getCreatedAt()).isEqualTo(ahora);
+    }
+
+    @Test @DisplayName("Comentario: estado y motivoRechazo funcionan")
+    void comentario_moderacion() {
+        Comentario c = new Comentario();
+        c.setEstado(Comentario.Estado.PENDIENTE);
+        c.setMotivoRechazo(null);
+        assertThat(c.getEstado()).isEqualTo(Comentario.Estado.PENDIENTE);
+
+        c.setEstado(Comentario.Estado.RECHAZADO);
+        c.setMotivoRechazo("Spam");
+        assertThat(c.getEstado()).isEqualTo(Comentario.Estado.RECHAZADO);
+        assertThat(c.getMotivoRechazo()).isEqualTo("Spam");
+
+        c.setEstado(Comentario.Estado.APROBADO);
+        assertThat(c.getEstado()).isEqualTo(Comentario.Estado.APROBADO);
+    }
+
+    @Test @DisplayName("Banner: todos los campos funcionan correctamente")
+    void banner_gettersSetters() {
+        Banner b = new Banner();
+        b.setId(100L); b.setTitulo("Promo");
+        b.setEmpresa("Empresa SA"); b.setImagenUrl("https://img.com/x.jpg");
+        b.setEnlaceUrl("https://link.com");
+        b.setActivo(true); b.setOrden(5);
+        LocalDateTime ahora = LocalDateTime.now();
+        b.setCreatedAt(ahora);
+
+        assertThat(b.getId()).isEqualTo(100L);
+        assertThat(b.getTitulo()).isEqualTo("Promo");
+        assertThat(b.getEmpresa()).isEqualTo("Empresa SA");
+        assertThat(b.getImagenUrl()).isEqualTo("https://img.com/x.jpg");
+        assertThat(b.getEnlaceUrl()).isEqualTo("https://link.com");
+        assertThat(b.getActivo()).isTrue();
+        assertThat(b.getOrden()).isEqualTo(5);
+        assertThat(b.getCreatedAt()).isEqualTo(ahora);
+    }
 }

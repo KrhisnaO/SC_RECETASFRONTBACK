@@ -13,19 +13,19 @@ import java.util.Map;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<?> manejarValidaciones(MethodArgumentNotValidException ex) {
+    public ResponseEntity<Map<String, String>> manejarValidaciones(MethodArgumentNotValidException ex) {
 
         Map<String, String> errores = new HashMap<>();
 
-        ex.getBindingResult().getFieldErrors().forEach(error -> {
-            errores.put(error.getField(), error.getDefaultMessage());
-        });
+        ex.getBindingResult().getFieldErrors().forEach(error ->
+            errores.put(error.getField(), error.getDefaultMessage())
+        );
 
         return ResponseEntity.badRequest().body(errores);
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<?> manejarErrores(Exception ex) {
+    public ResponseEntity<Map<String, String>> manejarErrores(Exception ex) {
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", ex.getMessage()));

@@ -101,16 +101,32 @@
 
       <hr class="section-divider">
 
-      <div class="comments-section">
+      <div id="comentarios" class="comments-section">
         <h3 class="section-title">Comentarios
           <span th:text="'(' + ${comentarios.size()} + ')'" class="comment-count"></span>
         </h3>
 
+        <!-- Mensaje flash sobre el último comentario enviado -->
+        <div th:if="${comentarioMensaje != null}"
+             th:classappend="${comentarioEstado == 'OK'} ? 'comment-flash comment-flash--ok' :
+                              (${comentarioEstado == 'REJECTED'} ? 'comment-flash comment-flash--reject' : 'comment-flash comment-flash--error')"
+             class="comment-flash"
+             style="margin-bottom:1rem; padding:.75rem 1rem; border-radius:8px; font-size:.9rem;">
+          <span th:text="${comentarioMensaje}"></span>
+        </div>
+
+        <!-- Aviso de moderación previa -->
+        <div th:if="${session.JWT_TOKEN != null}"
+             style="background:#fff3cd; border:1px solid #ffeeba; color:#856404;
+                    padding:.6rem .9rem; border-radius:6px; font-size:.85rem; margin-bottom:.75rem;">
+          ⓘ Los comentarios pasan por una revisión antes de publicarse para evitar contenido ofensivo o ilegal.
+        </div>
+
         <form th:if="${session.JWT_TOKEN != null}"
               th:action="@{/receta/{id}/comentar(id=${receta.id})}" method="post" class="comment-form">
           <textarea name="contenido" class="form-control"
-                    placeholder="Escribe tu comentario..." required minlength="3"></textarea>
-          <button type="submit" class="btn btn-primary">Publicar Comentario</button>
+                    placeholder="Escribe tu comentario..." required minlength="3" maxlength="1000"></textarea>
+          <button type="submit" class="btn btn-primary">Enviar comentario para revisión</button>
         </form>
 
         <div th:if="${session.JWT_TOKEN == null}" class="anon-prompt">
@@ -161,5 +177,11 @@
       .then(function() { alert('Enlace copiado correctamente'); });
   }
 </script>
+
+<style>
+  .comment-flash--ok     { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+  .comment-flash--reject { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+  .comment-flash--error  { background: #fff3cd; border: 1px solid #ffeeba; color: #856404; }
+</style>
 </body>
 </html>

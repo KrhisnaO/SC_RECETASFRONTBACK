@@ -44,18 +44,24 @@ class WebControllerTest {
 
     // ── GET /home ────────────────────────────────────────────────────────
     @Test
-    @DisplayName("GET /home retorna vista home con recetas")
+    @DisplayName("GET /home retorna vista home con banners, recientes y populares")
     void home_retornaVistaHome() throws Exception {
+        when(apiClient.obtenerBanners()).thenReturn(List.of());
+        when(apiClient.obtenerRecientes(anyInt())).thenReturn(List.of(receta));
+        when(apiClient.obtenerPopulares(anyInt())).thenReturn(List.of(receta));
         when(apiClient.obtenerRecetas()).thenReturn(List.of(receta));
         mockMvc.perform(get("/home"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("home"))
-                .andExpect(model().attributeExists("recetas"));
+                .andExpect(model().attributeExists("banners", "recientes", "populares", "recetas"));
     }
 
     @Test
     @DisplayName("GET / redirige a home")
     void raiz_retornaHome() throws Exception {
+        when(apiClient.obtenerBanners()).thenReturn(List.of());
+        when(apiClient.obtenerRecientes(anyInt())).thenReturn(List.of());
+        when(apiClient.obtenerPopulares(anyInt())).thenReturn(List.of());
         when(apiClient.obtenerRecetas()).thenReturn(List.of());
         mockMvc.perform(get("/"))
                 .andExpect(status().isOk())
@@ -65,6 +71,9 @@ class WebControllerTest {
     @Test
     @DisplayName("GET /recetas también carga home")
     void recetas_retornaHome() throws Exception {
+        when(apiClient.obtenerBanners()).thenReturn(List.of());
+        when(apiClient.obtenerRecientes(anyInt())).thenReturn(List.of());
+        when(apiClient.obtenerPopulares(anyInt())).thenReturn(List.of());
         when(apiClient.obtenerRecetas()).thenReturn(List.of());
         mockMvc.perform(get("/recetas"))
                 .andExpect(status().isOk())
@@ -128,9 +137,22 @@ class WebControllerTest {
 
     // ── POST /login ──────────────────────────────────────────────────────
     @Test
-    @DisplayName("POST /login redirige a home si token recibido")
+    @DisplayName("POST /login redirige a home si LoginResult válido")
     void login_redirigeSiToken() throws Exception {
-        when(apiClient.login("admin", "password")).thenReturn("eyJ.token");
+        when(apiClient.login("admin", "password"))
+                .thenReturn(new ApiClient.LoginResult("eyJ.token", "ROLE_USER"));
+        mockMvc.perform(post("/login")
+                        .param("username","admin")
+                        .param("password","password"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/home"));
+    }
+
+    @Test
+    @DisplayName("POST /login marca IS_ADMIN si role es ROLE_ADMIN")
+    void login_marcaAdminSiRolEsAdmin() throws Exception {
+        when(apiClient.login("admin", "password"))
+                .thenReturn(new ApiClient.LoginResult("eyJ.token", "ROLE_ADMIN"));
         mockMvc.perform(post("/login")
                         .param("username","admin")
                         .param("password","password"))
@@ -161,27 +183,45 @@ class WebControllerTest {
 
     // ── POST /receta/{id}/comentar ────────────────────────────────────────
     @Test
-    @DisplayName("POST /receta/{id}/comentar redirige al detalle con sesión activa")
+    @DisplayName("POST /receta/{id}/comentar con sesión envía y redirige al detalle")
     void comentar_conSesionRedirige() throws Exception {
         MockHttpSession session = new MockHttpSession();
         session.setAttribute("JWT_TOKEN", "eyJ.token");
 
-        when(apiClient.publicarComentario(eq(1L), anyString(), eq("eyJ.token"))).thenReturn(true);
+        when(apiClient.publicarComentarioDetallado(eq(1L), anyString(), eq("eyJ.token")))
+                .thenReturn(new ApiClient.ComentarioResult("OK", null));
 
         mockMvc.perform(post("/receta/1/comentar")
                         .param("contenido","Muy rica!")
                         .session(session))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/receta/1"));
+                .andExpect(redirectedUrl("/receta/1#comentarios"));
     }
 
     @Test
-    @DisplayName("POST /receta/{id}/comentar redirige sin llamar al API si no hay sesión")
+    @DisplayName("POST /receta/{id}/comentar redirige a login si no hay sesión")
     void comentar_sinSesionRedirige() throws Exception {
         mockMvc.perform(post("/receta/1/comentar").param("contenido","Texto"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/receta/1"));
-        verify(apiClient, never()).publicarComentario(any(), any(), any());
+                .andExpect(redirectedUrl("/login"));
+        verify(apiClient, never()).publicarComentarioDetallado(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("POST /receta/{id}/comentar muestra mensaje si moderación rechaza")
+    void comentar_rechazadoPorModeracion() throws Exception {
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute("JWT_TOKEN", "eyJ.token");
+
+        when(apiClient.publicarComentarioDetallado(eq(1L), anyString(), eq("eyJ.token")))
+                .thenReturn(new ApiClient.ComentarioResult("REJECTED", "Lenguaje no permitido"));
+
+        mockMvc.perform(post("/receta/1/comentar")
+                        .param("contenido","contenido prohibido")
+                        .session(session))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/receta/1#comentarios"))
+                .andExpect(flash().attribute("comentarioEstado", "REJECTED"));
     }
 
     // ── POST /receta/{id}/valorar ─────────────────────────────────────────
@@ -207,5 +247,66 @@ class WebControllerTest {
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/receta/1"));
         verify(apiClient, never()).valorar(any(), any(), any());
+    }
+
+    // ── GET /admin con filtro de moderación ──────────────────────────────
+    @Test
+    @DisplayName("GET /admin pasa todos los atributos a la vista admin")
+    void admin_retornaVistaConAtributos() throws Exception {
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute("JWT_TOKEN", "eyJ.token");
+        session.setAttribute("IS_ADMIN", Boolean.TRUE);
+
+        when(apiClient.listarUsuariosAdmin(anyString())).thenReturn(List.of());
+        when(apiClient.listarComentariosPorEstado(anyString(), anyString())).thenReturn(List.of());
+        when(apiClient.listarRecetasAdmin(anyString())).thenReturn(List.of());
+        when(apiClient.listarBannersAdmin(anyString())).thenReturn(List.of());
+
+        mockMvc.perform(get("/admin").session(session))
+                .andExpect(status().isOk())
+                .andExpect(view().name("admin"))
+                .andExpect(model().attributeExists("usuarios", "comentarios", "recetas",
+                        "banners", "estadoFiltro", "pendientesCount"));
+    }
+
+    @Test
+    @DisplayName("GET /admin redirige a home si no es admin")
+    void admin_redirigeSiNoEsAdmin() throws Exception {
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute("JWT_TOKEN", "eyJ.token");
+        session.setAttribute("IS_ADMIN", Boolean.FALSE);
+
+        mockMvc.perform(get("/admin").session(session))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/home"));
+    }
+
+    @Test
+    @DisplayName("POST /admin/comentarios/{id}/aprobar redirige a moderación")
+    void aprobarComentario_redirige() throws Exception {
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute("JWT_TOKEN", "eyJ.token");
+        session.setAttribute("IS_ADMIN", Boolean.TRUE);
+
+        when(apiClient.aprobarComentarioAdmin(eq(5L), anyString())).thenReturn(true);
+
+        mockMvc.perform(post("/admin/comentarios/5/aprobar").session(session))
+                .andExpect(status().is3xxRedirection());
+    }
+
+    @Test
+    @DisplayName("POST /admin/banners/crear delega en ApiClient")
+    void crearBanner_delegaApi() throws Exception {
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute("JWT_TOKEN", "eyJ.token");
+        session.setAttribute("IS_ADMIN", Boolean.TRUE);
+
+        when(apiClient.crearBannerAdmin(anyString(), any(), anyString(), any(),
+                anyBoolean(), anyInt(), anyString())).thenReturn(true);
+
+        mockMvc.perform(post("/admin/banners/crear").session(session)
+                        .param("titulo", "Promo")
+                        .param("imagenUrl", "https://img.com/x.jpg"))
+                .andExpect(status().is3xxRedirection());
     }
 }

@@ -14,6 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.logging.Logger;
 
@@ -36,7 +37,7 @@ public class MediaController {
             ".mp4", ".webm", ".ogv");
 
     private static final long MAX_FILE_SIZE_BYTES = 50L * 1024 * 1024;
-    private final String UPLOAD_DIR = "./uploads/";
+    private static final String UPLOAD_DIR = "./uploads/";
 
     @Autowired
     private RecetaService recetaService;
@@ -50,14 +51,14 @@ public class MediaController {
             return ResponseEntity.badRequest().body("Archivo demasiado grande");
 
         String contentType = file.getContentType();
-        if (contentType == null || !ALLOWED_MIME_TYPES.contains(contentType.toLowerCase()))
+        if (contentType == null || !ALLOWED_MIME_TYPES.contains(contentType.toLowerCase(Locale.ROOT)))
             return ResponseEntity.badRequest().body("Tipo de archivo no permitido");
 
         String originalName = file.getOriginalFilename();
         if (originalName == null || originalName.isBlank())
             return ResponseEntity.badRequest().body("Nombre de archivo inválido");
 
-        String lowerName = originalName.toLowerCase();
+        String lowerName = originalName.toLowerCase(Locale.ROOT);
         boolean extensionOk = ALLOWED_EXTENSIONS.stream().anyMatch(lowerName::endsWith);
         if (!extensionOk)
             return ResponseEntity.badRequest().body("Extensión no permitida");
@@ -68,7 +69,10 @@ public class MediaController {
 
         try {
             File dir = new File(UPLOAD_DIR);
-            if (!dir.exists()) dir.mkdirs();
+            if (!dir.exists() && !dir.mkdirs()) {
+                LOGGER.severe("No se pudo crear el directorio de uploads: " + UPLOAD_DIR);
+                return ResponseEntity.internalServerError().body("Error al preparar el directorio de uploads");
+            }
 
             String extension = lowerName.substring(lowerName.lastIndexOf('.'));
             String safeFileName = UUID.randomUUID() + extension;

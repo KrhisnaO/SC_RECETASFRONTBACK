@@ -18,6 +18,7 @@ public class RecetaDTO {
     private String instrucciones;
     private String ingredientes;
     private String imagenUrl;
+    private String createdAt;
     private List<MultimediaDTO> elementosMedia = new ArrayList<>();
 
     public Long getId() { return id; }
@@ -40,6 +41,8 @@ public class RecetaDTO {
     public void setIngredientes(String ingredientes) { this.ingredientes = ingredientes; }
     public String getImagenUrl() { return imagenUrl; }
     public void setImagenUrl(String imagenUrl) { this.imagenUrl = imagenUrl; }
+    public String getCreatedAt() { return createdAt; }
+    public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
     public List<MultimediaDTO> getElementosMedia() { return elementosMedia; }
     public void setElementosMedia(List<MultimediaDTO> elementosMedia) { this.elementosMedia = elementosMedia; }
 }

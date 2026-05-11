@@ -34,6 +34,7 @@ class AdminControllerTest {
     @Autowired MockMvc mockMvc;
     @Autowired ObjectMapper objectMapper;
     @MockBean AdminService adminService;
+    @MockBean com.recetas_back.recetas_back.service.ComentarioService comentarioService;
     @MockBean com.recetas_back.recetas_back.security.JwtAuthenticationFilter jwtFilter;
     @MockBean com.recetas_back.recetas_back.security.CustomUserDetailsService userDetailsService;
     @MockBean org.springframework.security.authentication.AuthenticationManager authManager;
@@ -181,5 +182,70 @@ class AdminControllerTest {
 
         mockMvc.perform(delete("/api/admin/comentarios/99").with(csrf()))
                 .andExpect(status().isNotFound());
+    }
+
+    // ── Moderación: aprobar / rechazar ────────────────────────────────────
+
+    @Test
+    @DisplayName("PUT /api/admin/comentarios/{id}/aprobar → 200")
+    @WithMockUser(roles = "ADMIN")
+    void aprobarComentario_existe_retorna200() throws Exception {
+        comentario.setEstado(Comentario.Estado.APROBADO);
+        when(comentarioService.aprobar(10L)).thenReturn(comentario);
+        mockMvc.perform(put("/api/admin/comentarios/10/aprobar").with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("APROBADO"));
+    }
+
+    @Test
+    @DisplayName("PUT /api/admin/comentarios/{id}/aprobar → 404 si no existe")
+    @WithMockUser(roles = "ADMIN")
+    void aprobarComentario_noExiste_retorna404() throws Exception {
+        when(comentarioService.aprobar(99L))
+                .thenThrow(new IllegalArgumentException("Comentario no encontrado"));
+        mockMvc.perform(put("/api/admin/comentarios/99/aprobar").with(csrf()))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("PUT /api/admin/comentarios/{id}/rechazar con motivo → 200")
+    @WithMockUser(roles = "ADMIN")
+    void rechazarComentario_conMotivo_retorna200() throws Exception {
+        comentario.setEstado(Comentario.Estado.RECHAZADO);
+        comentario.setMotivoRechazo("Lenguaje ofensivo");
+        when(comentarioService.rechazar(eq(10L), anyString())).thenReturn(comentario);
+        mockMvc.perform(put("/api/admin/comentarios/10/rechazar").with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("motivo", "Lenguaje ofensivo"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("RECHAZADO"));
+    }
+
+    @Test
+    @DisplayName("PUT /api/admin/comentarios/{id}/rechazar sin body → 200")
+    @WithMockUser(roles = "ADMIN")
+    void rechazarComentario_sinBody_retorna200() throws Exception {
+        comentario.setEstado(Comentario.Estado.RECHAZADO);
+        when(comentarioService.rechazar(eq(10L), any())).thenReturn(comentario);
+        mockMvc.perform(put("/api/admin/comentarios/10/rechazar").with(csrf()))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("GET /api/admin/comentarios?estado=PENDIENTE → 200 filtrado")
+    @WithMockUser(roles = "ADMIN")
+    void listarComentarios_filtroEstado_retorna200() throws Exception {
+        when(comentarioService.listarPorEstado(Comentario.Estado.PENDIENTE))
+                .thenReturn(List.of(comentario));
+        mockMvc.perform(get("/api/admin/comentarios?estado=PENDIENTE"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("GET /api/admin/comentarios?estado=invalido → 400")
+    @WithMockUser(roles = "ADMIN")
+    void listarComentarios_estadoInvalido_retorna400() throws Exception {
+        mockMvc.perform(get("/api/admin/comentarios?estado=INVALIDO"))
+                .andExpect(status().isBadRequest());
     }
 }

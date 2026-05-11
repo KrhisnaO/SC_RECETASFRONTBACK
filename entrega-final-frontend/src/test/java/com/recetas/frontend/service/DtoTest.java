@@ -78,4 +78,47 @@ class DtoTest {
         assertThat(m.getFileUrl()).isEqualTo("/vid.mp4");
         assertThat(m.getFileType()).isEqualTo("VIDEO");
     }
+
+    @Test
+    @DisplayName("RecetaDTO: campo createdAt funciona")
+    void recetaDTO_createdAt() {
+        RecetaDTO r = new RecetaDTO();
+        r.setCreatedAt("2026-01-15T10:30:00");
+        assertThat(r.getCreatedAt()).isEqualTo("2026-01-15T10:30:00");
+    }
+
+    @Test
+    @DisplayName("ComentarioDTO: estado y motivoRechazo funcionan")
+    void comentarioDTO_estadoYMotivo() {
+        ComentarioDTO c = new ComentarioDTO();
+        c.setEstado("APROBADO");
+        c.setMotivoRechazo(null);
+        assertThat(c.getEstado()).isEqualTo("APROBADO");
+
+        c.setEstado("RECHAZADO");
+        c.setMotivoRechazo("Lenguaje no permitido");
+        assertThat(c.getEstado()).isEqualTo("RECHAZADO");
+        assertThat(c.getMotivoRechazo()).isEqualTo("Lenguaje no permitido");
+    }
+
+    @Test
+    @DisplayName("BannerDTO: todos los campos funcionan")
+    void bannerDTO_camposFuncionan() {
+        BannerDTO b = new BannerDTO();
+        b.setId(7L);
+        b.setTitulo("Promo");
+        b.setEmpresa("Empresa SA");
+        b.setImagenUrl("https://img.com/x.jpg");
+        b.setEnlaceUrl("https://link.com");
+        b.setActivo(true);
+        b.setOrden(3);
+
+        assertThat(b.getId()).isEqualTo(7L);
+        assertThat(b.getTitulo()).isEqualTo("Promo");
+        assertThat(b.getEmpresa()).isEqualTo("Empresa SA");
+        assertThat(b.getImagenUrl()).isEqualTo("https://img.com/x.jpg");
+        assertThat(b.getEnlaceUrl()).isEqualTo("https://link.com");
+        assertThat(b.getActivo()).isTrue();
+        assertThat(b.getOrden()).isEqualTo(3);
+    }
 }

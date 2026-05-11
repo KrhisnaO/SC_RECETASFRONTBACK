@@ -31,6 +31,8 @@ class AuthControllerTest {
     @Autowired MockMvc mockMvc;
     @Autowired ObjectMapper objectMapper;
     @MockBean AuthService authService;
+    @MockBean com.recetas_back.recetas_back.repository.UsuarioRepository usuarioRepository;
+    @MockBean com.recetas_back.recetas_back.security.JwtTokenProvider jwtTokenProvider;
     @MockBean com.recetas_back.recetas_back.security.JwtAuthenticationFilter jwtFilter;
     @MockBean com.recetas_back.recetas_back.security.CustomUserDetailsService userDetailsService;
     @MockBean org.springframework.security.authentication.AuthenticationManager authManager;
@@ -41,6 +43,7 @@ class AuthControllerTest {
     @DisplayName("POST /api/auth/login → 200 con credenciales correctas")
     void login_retorna200() throws Exception {
         when(authService.autenticar("admin", "password")).thenReturn("eyJ.token");
+        when(jwtTokenProvider.generateRefreshToken("admin")).thenReturn("eyJ.refresh");
 
         LoginRequest req = new LoginRequest();
         req.setUsername("admin");
@@ -52,6 +55,7 @@ class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").value("eyJ.token"))
+                .andExpect(jsonPath("$.refreshToken").value("eyJ.refresh"))
                 .andExpect(jsonPath("$.username").value("admin"));
     }
 
@@ -139,5 +143,74 @@ class AuthControllerTest {
                         .content("{\"username\":\"user1\",\"email\":\"a@a.com\",\"password\":\"123\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").exists());
+    }
+
+    // ── REFRESH ───────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("POST /api/auth/refresh → 200 con refresh token válido")
+    void refresh_tokenValido_retorna200() throws Exception {
+        Usuario u = new Usuario();
+        u.setUsername("maria");
+        u.setRole("ROLE_USER");
+        when(jwtTokenProvider.validateToken("rt.valid")).thenReturn(true);
+        when(jwtTokenProvider.isRefreshToken("rt.valid")).thenReturn(true);
+        when(jwtTokenProvider.getUsernameFromJWT("rt.valid")).thenReturn("maria");
+        when(usuarioRepository.findByUsername("maria")).thenReturn(java.util.Optional.of(u));
+        when(jwtTokenProvider.generateAccessToken("maria")).thenReturn("new.access");
+        when(jwtTokenProvider.generateRefreshToken("maria")).thenReturn("new.refresh");
+
+        mockMvc.perform(post("/api/auth/refresh").with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refreshToken\":\"rt.valid\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").value("new.access"))
+                .andExpect(jsonPath("$.refreshToken").value("new.refresh"));
+    }
+
+    @Test
+    @DisplayName("POST /api/auth/refresh → 400 si falta refreshToken")
+    void refresh_sinToken_retorna400() throws Exception {
+        mockMvc.perform(post("/api/auth/refresh").with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("POST /api/auth/refresh → 401 si refresh token es inválido")
+    void refresh_tokenInvalido_retorna401() throws Exception {
+        when(jwtTokenProvider.validateToken("rt.bad")).thenReturn(false);
+
+        mockMvc.perform(post("/api/auth/refresh").with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refreshToken\":\"rt.bad\"}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("POST /api/auth/refresh → 401 si access token se usa como refresh")
+    void refresh_accessTokenUsadoComoRefresh_retorna401() throws Exception {
+        when(jwtTokenProvider.validateToken("at.access")).thenReturn(true);
+        when(jwtTokenProvider.isRefreshToken("at.access")).thenReturn(false);
+
+        mockMvc.perform(post("/api/auth/refresh").with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refreshToken\":\"at.access\"}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("POST /api/auth/refresh → 401 si el usuario ya no existe")
+    void refresh_usuarioBorrado_retorna401() throws Exception {
+        when(jwtTokenProvider.validateToken("rt.valid")).thenReturn(true);
+        when(jwtTokenProvider.isRefreshToken("rt.valid")).thenReturn(true);
+        when(jwtTokenProvider.getUsernameFromJWT("rt.valid")).thenReturn("borrado");
+        when(usuarioRepository.findByUsername("borrado")).thenReturn(java.util.Optional.empty());
+
+        mockMvc.perform(post("/api/auth/refresh").with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refreshToken\":\"rt.valid\"}"))
+                .andExpect(status().isUnauthorized());
     }
 }

@@ -47,6 +47,18 @@ public class RecetaController {
         return ResponseEntity.ok(recetaService.buscar(query, tipoCocina, pais, dificultad));
     }
 
+    @GetMapping("/recientes")
+    public ResponseEntity<List<Receta>> recientes(
+            @RequestParam(required = false, defaultValue = "8") Integer limite) {
+        return ResponseEntity.ok(recetaService.listarRecientes(limite));
+    }
+
+    @GetMapping("/populares")
+    public ResponseEntity<List<Receta>> populares(
+            @RequestParam(required = false, defaultValue = "8") Integer limite) {
+        return ResponseEntity.ok(recetaService.listarPopulares(limite));
+    }
+
     /**
      * Publica una nueva receta. Requiere JWT válido (usuario autenticado).
      * Body JSON esperado:

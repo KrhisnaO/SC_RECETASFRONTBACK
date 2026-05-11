@@ -1,6 +1,7 @@
 package com.recetas_back.recetas_back.model;
 
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -27,6 +28,16 @@ public class Receta {
     private String ingredientes;
 
     private String imagenUrl;
+
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        if (this.createdAt == null) {
+            this.createdAt = LocalDateTime.now();
+        }
+    }
 
     @OneToMany(mappedBy = "receta", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Multimedia> elementosMedia = new ArrayList<>();
@@ -140,5 +151,13 @@ public class Receta {
 
     public void setValoraciones(List<Valoracion> valoraciones) {
         this.valoraciones = valoraciones;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 }

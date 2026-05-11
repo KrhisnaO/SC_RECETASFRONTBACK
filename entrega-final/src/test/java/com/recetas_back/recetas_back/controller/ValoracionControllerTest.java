@@ -53,6 +53,7 @@ class ValoracionControllerTest {
         req.setPuntuacion(5);
         mockMvc.perform(post("/api/recetas/1/valoraciones")
                         .with(csrf())
+                        .principal(() -> "carlos")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk());
@@ -68,6 +69,7 @@ class ValoracionControllerTest {
         req.setPuntuacion(3);
         mockMvc.perform(post("/api/recetas/99/valoraciones")
                         .with(csrf())
+                        .principal(() -> "carlos")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isNotFound());

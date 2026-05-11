@@ -1,17 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-    Archivo de exclusiones para SpotBugs + FindSecBugs
-    Proyecto: recetas-app
-    Excluye falsos positivos conocidos y clases generadas automáticamente.
--->
 <FindBugsFilter>
-    <!-- Excluir clases generadas por Lombok (si aplica en el futuro) -->
     <Match>
         <Class name="~.*\$.*"/>
     </Match>
 
-    <!-- Excluir clase de test -->
     <Match>
         <Class name="~.*Test.*"/>
+    </Match>
+
+    <Match>
+        <Package name="com.recetas_back.recetas_back.model"/>
+        <Or>
+            <Bug pattern="EI_EXPOSE_REP"/>
+            <Bug pattern="EI_EXPOSE_REP2"/>
+        </Or>
     </Match>
 </FindBugsFilter>

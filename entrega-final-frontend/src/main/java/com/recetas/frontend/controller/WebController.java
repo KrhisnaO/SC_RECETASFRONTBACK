@@ -21,7 +21,10 @@ public class WebController {
 
     @GetMapping({"/", "/home", "/recetas"})
     public String home(Model model) {
-        model.addAttribute("recetas", apiClient.obtenerRecetas());
+        model.addAttribute("banners",   apiClient.obtenerBanners());
+        model.addAttribute("recientes", apiClient.obtenerRecientes(8));
+        model.addAttribute("populares", apiClient.obtenerPopulares(8));
+        model.addAttribute("recetas",   apiClient.obtenerRecetas());
         return "home";
     }
 
@@ -126,15 +129,45 @@ public class WebController {
                            @RequestParam(required = false) String instrucciones,
                            @RequestParam(required = false) String ingredientes,
                            @RequestParam(required = false) String imagenUrl,
+                           @RequestParam(required = false) org.springframework.web.multipart.MultipartFile[] fotos,
+                           @RequestParam(required = false) org.springframework.web.multipart.MultipartFile[] videos,
                            HttpSession session, Model model) {
         String token = (String) session.getAttribute("JWT_TOKEN");
         if (token == null) return "redirect:/login";
 
-        String error = apiClient.publicarReceta(nombre, tipoCocina, pais, dificultad,
+        Long recetaId = apiClient.publicarRecetaYObtenerId(nombre, tipoCocina, pais, dificultad,
                 tiempoPrepMinutos, descripcion, instrucciones, ingredientes, imagenUrl, token);
-        if (error == null) return "redirect:/home?publicado";
-        model.addAttribute("error", error);
-        return "publicar";
+        if (recetaId == null) {
+            model.addAttribute("error", "No se pudo publicar la receta.");
+            return "publicar";
+        }
+
+        int subidasOk = 0, subidasFallidas = 0;
+        if (fotos != null) {
+            for (var foto : fotos) {
+                if (foto != null && !foto.isEmpty()) {
+                    if (apiClient.subirArchivoMultimedia(recetaId, foto, token)) subidasOk++;
+                    else subidasFallidas++;
+                }
+            }
+        }
+        if (videos != null) {
+            for (var video : videos) {
+                if (video != null && !video.isEmpty()) {
+                    if (apiClient.subirArchivoMultimedia(recetaId, video, token)) subidasOk++;
+                    else subidasFallidas++;
+                }
+            }
+        }
+
+        String redirect = "redirect:/home?publicado";
+        if (subidasFallidas > 0) {
+            redirect += "&mediaWarning=" + subidasFallidas;
+        }
+        if (subidasOk > 0) {
+            redirect += "&mediaOk=" + subidasOk;
+        }
+        return redirect;
     }
 
     // Favoritos
@@ -164,10 +197,27 @@ public class WebController {
     // Comentar / Valorar
 
     @PostMapping("/receta/{id}/comentar")
-    public String comentar(@PathVariable Long id, @RequestParam String contenido, HttpSession session) {
+    public String comentar(@PathVariable Long id, @RequestParam String contenido,
+                           HttpSession session,
+                           org.springframework.web.servlet.mvc.support.RedirectAttributes flash) {
         String token = (String) session.getAttribute("JWT_TOKEN");
-        if (token != null) apiClient.publicarComentario(id, contenido, token);
-        return "redirect:/receta/" + id;
+        if (token == null) return "redirect:/login";
+
+        ApiClient.ComentarioResult result = apiClient.publicarComentarioDetallado(id, contenido, token);
+        if ("OK".equals(result.status())) {
+            flash.addFlashAttribute("comentarioMensaje",
+                    "Tu comentario fue enviado y será visible cuando un moderador lo apruebe.");
+            flash.addFlashAttribute("comentarioEstado", "OK");
+        } else if ("REJECTED".equals(result.status())) {
+            flash.addFlashAttribute("comentarioMensaje",
+                    "Tu comentario fue rechazado: " + result.motivo());
+            flash.addFlashAttribute("comentarioEstado", "REJECTED");
+        } else {
+            flash.addFlashAttribute("comentarioMensaje",
+                    "No se pudo enviar el comentario: " + result.motivo());
+            flash.addFlashAttribute("comentarioEstado", "ERROR");
+        }
+        return "redirect:/receta/" + id + "#comentarios";
     }
 
     @PostMapping("/receta/{id}/valorar")
@@ -180,15 +230,79 @@ public class WebController {
     // Panel Admin
 
     @GetMapping("/admin")
-    public String adminPanel(HttpSession session, Model model) {
+    public String adminPanel(@RequestParam(required = false) String estado,
+                             HttpSession session, Model model) {
         String token   = (String)  session.getAttribute("JWT_TOKEN");
         Boolean isAdmin = (Boolean) session.getAttribute("IS_ADMIN");
         if (token == null || !Boolean.TRUE.equals(isAdmin)) return "redirect:/home";
 
-        model.addAttribute("usuarios",    apiClient.listarUsuariosAdmin(token));
-        model.addAttribute("comentarios", apiClient.listarComentariosAdmin(token));
-        model.addAttribute("recetas",     apiClient.listarRecetasAdmin(token));
+        String filtroEstado = (estado == null || estado.isBlank()) ? "PENDIENTE" : estado.toUpperCase();
+        List<Map<String, Object>> comentarios;
+        if ("TODOS".equals(filtroEstado)) {
+            comentarios = apiClient.listarComentariosAdmin(token);
+        } else {
+            comentarios = apiClient.listarComentariosPorEstado(filtroEstado, token);
+        }
+
+        long pendientesCount = "PENDIENTE".equals(filtroEstado)
+                ? comentarios.size()
+                : apiClient.listarComentariosPorEstado("PENDIENTE", token).size();
+
+        model.addAttribute("usuarios",        apiClient.listarUsuariosAdmin(token));
+        model.addAttribute("comentarios",     comentarios);
+        model.addAttribute("estadoFiltro",    filtroEstado);
+        model.addAttribute("pendientesCount", pendientesCount);
+        model.addAttribute("recetas",         apiClient.listarRecetasAdmin(token));
+        model.addAttribute("banners",         apiClient.listarBannersAdmin(token));
         return "admin";
+    }
+
+    @PostMapping("/admin/comentarios/{id}/aprobar")
+    public String aprobarComentarioAdmin(@PathVariable Long id, HttpSession session) {
+        String token   = (String)  session.getAttribute("JWT_TOKEN");
+        Boolean isAdmin = (Boolean) session.getAttribute("IS_ADMIN");
+        if (token == null || !Boolean.TRUE.equals(isAdmin)) return "redirect:/home";
+        apiClient.aprobarComentarioAdmin(id, token);
+        return "redirect:/admin?estado=PENDIENTE#comentarios";
+    }
+
+    @PostMapping("/admin/comentarios/{id}/rechazar")
+    public String rechazarComentarioAdmin(@PathVariable Long id,
+                                          @RequestParam(required = false) String motivo,
+                                          HttpSession session) {
+        String token   = (String)  session.getAttribute("JWT_TOKEN");
+        Boolean isAdmin = (Boolean) session.getAttribute("IS_ADMIN");
+        if (token == null || !Boolean.TRUE.equals(isAdmin)) return "redirect:/home";
+        apiClient.rechazarComentarioAdmin(id, motivo, token);
+        return "redirect:/admin?estado=PENDIENTE#comentarios";
+    }
+
+
+    @PostMapping("/admin/banners/crear")
+    public String crearBanner(@RequestParam String titulo,
+                              @RequestParam(required = false) String empresa,
+                              @RequestParam String imagenUrl,
+                              @RequestParam(required = false) String enlaceUrl,
+                              @RequestParam(required = false) Boolean activo,
+                              @RequestParam(required = false) Integer orden,
+                              HttpSession session) {
+        String token   = (String)  session.getAttribute("JWT_TOKEN");
+        Boolean isAdmin = (Boolean) session.getAttribute("IS_ADMIN");
+        if (token == null || !Boolean.TRUE.equals(isAdmin)) return "redirect:/home";
+        apiClient.crearBannerAdmin(titulo, empresa, imagenUrl, enlaceUrl,
+                activo != null ? activo : Boolean.TRUE,
+                orden  != null ? orden  : 0,
+                token);
+        return "redirect:/admin#banners";
+    }
+
+    @PostMapping("/admin/banners/{id}/eliminar")
+    public String eliminarBanner(@PathVariable Long id, HttpSession session) {
+        String token   = (String)  session.getAttribute("JWT_TOKEN");
+        Boolean isAdmin = (Boolean) session.getAttribute("IS_ADMIN");
+        if (token == null || !Boolean.TRUE.equals(isAdmin)) return "redirect:/home";
+        apiClient.eliminarBannerAdmin(id, token);
+        return "redirect:/admin#banners";
     }
 
     @PostMapping("/admin/comentarios/{id}/eliminar")

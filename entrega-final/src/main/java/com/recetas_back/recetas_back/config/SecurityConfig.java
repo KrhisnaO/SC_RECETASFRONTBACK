@@ -1,7 +1,6 @@
 package com.recetas_back.recetas_back.config;
 
 import com.recetas_back.recetas_back.security.JwtAuthenticationFilter;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -26,25 +25,24 @@ import java.util.List;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    @Autowired
-    private JwtAuthenticationFilter jwtAuthenticationFilter;
-
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http,
+                                                   JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 // Rutas públicas de autenticación
-                .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/register").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/register", "/api/auth/refresh").permitAll()
                 // Rutas públicas de consulta de recetas
                 .requestMatchers(HttpMethod.GET,
                         "/api/recetas",
                         "/api/recetas/**",
                         "/api/valoraciones/**",
                         "/api/comentarios/**",
-                        "/api/media/**"
+                        "/api/media/**",
+                        "/api/banners"
                 ).permitAll()
                 // Rutas de administración: solo ADMIN
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")

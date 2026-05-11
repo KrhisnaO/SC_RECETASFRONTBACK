@@ -10,8 +10,9 @@
 
     <nav class="admin-tabs">
       <a href="#usuarios"    class="admin-tab-link">Usuarios</a>
-      <a href="#comentarios" class="admin-tab-link">Comentarios</a>
+      <a href="#comentarios" class="admin-tab-link">Moderar Comentarios</a>
       <a href="#recetas"     class="admin-tab-link">Recetas</a>
+      <a href="#banners"     class="admin-tab-link">Banners</a>
     </nav>
 
     <!-- USUARIOS -->
@@ -72,13 +73,35 @@
       </div>
     </section>
 
-    <!-- COMENTARIOS -->
+    <!-- COMENTARIOS - MODERACIÓN -->
     <section id="comentarios" class="admin-section" style="margin-top:2rem;">
-      <h3 class="admin-section-title">Moderacion de Comentarios</h3>
-      <p class="admin-section-desc">Elimina comentarios ofensivos o inapropiados.</p>
+      <h3 class="admin-section-title">Moderación de Comentarios</h3>
+      <p class="admin-section-desc">
+        Los comentarios nuevos quedan <strong>pendientes</strong> de revisión y no son
+        visibles para los usuarios hasta que un moderador los apruebe.
+        Aprueba los aceptables, rechaza los ofensivos.
+      </p>
+
+      <!-- Sub-tabs por estado -->
+      <div class="moderation-tabs">
+        <a href="?estado=PENDIENTE#comentarios"
+           class="mod-tab"
+           th:classappend="${estadoFiltro == null or estadoFiltro == 'PENDIENTE'} ? 'mod-tab--active' : ''">
+          Pendientes <span class="mod-tab-count" th:text="${pendientesCount != null ? pendientesCount : 0}">0</span>
+        </a>
+        <a href="?estado=APROBADO#comentarios"
+           class="mod-tab"
+           th:classappend="${estadoFiltro == 'APROBADO'} ? 'mod-tab--active' : ''">Aprobados</a>
+        <a href="?estado=RECHAZADO#comentarios"
+           class="mod-tab"
+           th:classappend="${estadoFiltro == 'RECHAZADO'} ? 'mod-tab--active' : ''">Rechazados</a>
+        <a href="?estado=TODOS#comentarios"
+           class="mod-tab"
+           th:classappend="${estadoFiltro == 'TODOS'} ? 'mod-tab--active' : ''">Todos</a>
+      </div>
 
       <div th:if="${comentarios == null or comentarios.isEmpty()}" class="no-results">
-        <p>No hay comentarios publicados.</p>
+        <p>No hay comentarios para mostrar en este estado.</p>
       </div>
 
       <div th:if="${comentarios != null and !comentarios.isEmpty()}" class="admin-table-wrap">
@@ -89,8 +112,9 @@
               <th>Usuario</th>
               <th>Receta</th>
               <th>Contenido</th>
+              <th>Estado</th>
               <th>Fecha</th>
-              <th>Accion</th>
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -102,13 +126,128 @@
                    th:text="${c['recetaNombre'] != null and !#strings.isEmpty(c['recetaNombre'].toString()) ? c['recetaNombre'] : 'Ver receta'}"
                    style="color:var(--primary);"></a>
               </td>
-              <td style="max-width:280px; word-break:break-word;" th:text="${c['contenido']}"></td>
+              <td style="max-width:280px; word-break:break-word;">
+                <span th:text="${c['contenido']}"></span>
+                <div th:if="${c['motivoRechazo'] != null and !#strings.isEmpty(c['motivoRechazo'].toString())}"
+                     style="margin-top:.25rem; font-size:.75rem; color:#c0392b;">
+                  Motivo: <span th:text="${c['motivoRechazo']}"></span>
+                </div>
+              </td>
+              <td>
+                <span class="estado-badge"
+                      th:classappend="${c['estado'] == 'APROBADO'} ? 'estado-badge--aprobado' :
+                                       (${c['estado'] == 'RECHAZADO'} ? 'estado-badge--rechazado' : 'estado-badge--pendiente')"
+                      th:text="${c['estado']}"></span>
+              </td>
               <td style="white-space:nowrap; font-size:.8rem; color:var(--text-muted);"
                   th:text="${c['createdAt'] != null ? #strings.substring(c['createdAt'].toString(), 0, 10) : ''}"></td>
-              <td>
+              <td style="display:flex; gap:.35rem; flex-wrap:wrap;">
+                <form th:if="${c['estado'] != 'APROBADO'}"
+                      th:action="@{/admin/comentarios/{id}/aprobar(id=${c['id']})}"
+                      method="post">
+                  <button type="submit" class="btn-admin btn-admin--ok">Aprobar</button>
+                </form>
+                <form th:if="${c['estado'] != 'RECHAZADO'}"
+                      th:action="@{/admin/comentarios/{id}/rechazar(id=${c['id']})}"
+                      method="post"
+                      onsubmit="return confirm('Rechazar este comentario?')">
+                  <input type="hidden" name="motivo" value="Rechazado por moderador" />
+                  <button type="submit" class="btn-admin btn-admin--warn">Rechazar</button>
+                </form>
                 <form th:action="@{/admin/comentarios/{id}/eliminar(id=${c['id']})}"
                       method="post"
-                      onsubmit="return confirm('Eliminar este comentario?')">
+                      onsubmit="return confirm('Eliminar este comentario? Esta acción es irreversible.')">
+                  <button type="submit" class="btn-admin btn-admin--danger">Eliminar</button>
+                </form>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- BANNERS COMERCIALES -->
+    <section id="banners" class="admin-section" style="margin-top:2rem;">
+      <h3 class="admin-section-title">Banners Comerciales</h3>
+      <p class="admin-section-desc">
+        Gestiona los banners de avisos comerciales que se muestran en la página de inicio.
+      </p>
+
+      <!-- Formulario de creación -->
+      <form th:action="@{/admin/banners/crear}" method="post" class="banner-form">
+        <div class="banner-form-grid">
+          <div>
+            <label>Título *</label>
+            <input type="text" name="titulo" required maxlength="150" class="form-control"/>
+          </div>
+          <div>
+            <label>Empresa</label>
+            <input type="text" name="empresa" maxlength="150" class="form-control"/>
+          </div>
+          <div>
+            <label>URL Imagen *</label>
+            <input type="url" name="imagenUrl" required maxlength="500" class="form-control"/>
+          </div>
+          <div>
+            <label>Enlace (URL)</label>
+            <input type="url" name="enlaceUrl" maxlength="500" class="form-control"/>
+          </div>
+          <div>
+            <label>Orden</label>
+            <input type="number" name="orden" value="0" min="0" max="999" class="form-control"/>
+          </div>
+          <div style="display:flex; align-items:flex-end;">
+            <label style="display:flex; gap:.5rem; align-items:center;">
+              <input type="checkbox" name="activo" value="true" checked />
+              <span>Activo</span>
+            </label>
+          </div>
+        </div>
+        <button type="submit" class="btn-admin btn-admin--ok" style="margin-top:1rem;">Crear banner</button>
+      </form>
+
+      <div th:if="${banners == null or banners.isEmpty()}" class="no-results" style="margin-top:1.5rem;">
+        <p>No hay banners creados.</p>
+      </div>
+
+      <div th:if="${banners != null and !banners.isEmpty()}" class="admin-table-wrap" style="margin-top:1.5rem;">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Imagen</th>
+              <th>Título</th>
+              <th>Empresa</th>
+              <th>Enlace</th>
+              <th>Orden</th>
+              <th>Activo</th>
+              <th>Eliminar</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="b : ${banners}">
+              <td th:text="${b.id}"></td>
+              <td>
+                <img th:src="${b.imagenUrl}" alt="banner"
+                     style="width:80px; height:50px; object-fit:cover; border-radius:4px;"/>
+              </td>
+              <td th:text="${b.titulo}"></td>
+              <td th:text="${b.empresa != null ? b.empresa : '—'}"></td>
+              <td>
+                <a th:if="${b.enlaceUrl != null and !#strings.isEmpty(b.enlaceUrl)}"
+                   th:href="${b.enlaceUrl}" target="_blank"
+                   style="color:var(--primary); font-size:.8rem;">Abrir</a>
+                <span th:if="${b.enlaceUrl == null or #strings.isEmpty(b.enlaceUrl)}">—</span>
+              </td>
+              <td th:text="${b.orden}"></td>
+              <td>
+                <span th:if="${b.activo}" class="estado-badge estado-badge--aprobado">SÍ</span>
+                <span th:if="${!b.activo}" class="estado-badge estado-badge--rechazado">NO</span>
+              </td>
+              <td>
+                <form th:action="@{/admin/banners/{id}/eliminar(id=${b.id})}"
+                      method="post"
+                      onsubmit="return confirm('Eliminar este banner?')">
                   <button type="submit" class="btn-admin btn-admin--danger">Eliminar</button>
                 </form>
               </td>
@@ -240,8 +379,87 @@
   .btn-admin--danger:hover { background: #c0392b; color: #fff; }
   .btn-admin--ok      { border-color: var(--primary); color: var(--primary); }
   .btn-admin--ok:hover { background: var(--primary); color: #fff; }
+  .btn-admin--warn    { border-color: #d68910; color: #d68910; }
+  .btn-admin--warn:hover { background: #d68910; color: #fff; }
   .btn-admin--neutral { border-color: var(--text-muted); color: var(--text-muted); }
   .btn-admin--neutral:hover { background: var(--text-muted); color: #fff; }
+
+  .moderation-tabs {
+    display: flex;
+    gap: .5rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+  }
+  .mod-tab {
+    text-decoration: none;
+    color: var(--text-muted);
+    font-size: .85rem;
+    font-weight: 600;
+    padding: .35rem .85rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: #fff;
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+  }
+  .mod-tab:hover { background: var(--cream); }
+  .mod-tab--active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+  }
+  .mod-tab-count {
+    background: rgba(255,255,255,0.25);
+    color: inherit;
+    font-size: .7rem;
+    padding: 0 .4rem;
+    border-radius: 8px;
+    min-width: 18px;
+    text-align: center;
+  }
+  .mod-tab:not(.mod-tab--active) .mod-tab-count {
+    background: var(--cream);
+  }
+
+  .estado-badge {
+    display: inline-block;
+    padding: .2rem .6rem;
+    border-radius: 6px;
+    font-size: .7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+  }
+  .estado-badge--pendiente { background: #fff3cd; color: #856404; }
+  .estado-badge--aprobado  { background: #d4edda; color: #155724; }
+  .estado-badge--rechazado { background: #f8d7da; color: #721c24; }
+
+  .banner-form {
+    background: var(--cream);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+  }
+  .banner-form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+  }
+  .banner-form label {
+    display: block;
+    font-size: .8rem;
+    color: var(--text-muted);
+    margin-bottom: .25rem;
+    font-weight: 600;
+  }
+  .banner-form .form-control {
+    width: 100%;
+    padding: .5rem .65rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: .9rem;
+  }
 </style>
 </body>
 </html>

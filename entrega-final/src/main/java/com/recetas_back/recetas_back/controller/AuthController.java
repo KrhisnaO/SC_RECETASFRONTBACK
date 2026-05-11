@@ -5,6 +5,7 @@ import com.recetas_back.recetas_back.dto.LoginResponse;
 import com.recetas_back.recetas_back.dto.RegisterRequest;
 import com.recetas_back.recetas_back.model.Usuario;
 import com.recetas_back.recetas_back.repository.UsuarioRepository;
+import com.recetas_back.recetas_back.security.JwtTokenProvider;
 import com.recetas_back.recetas_back.service.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +24,9 @@ public class AuthController {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
+    @Autowired
+    private JwtTokenProvider jwtTokenProvider;
+
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         try {
@@ -32,10 +36,31 @@ public class AuthController {
                     .map(Usuario::getRole)
                     .orElse("ROLE_USER");
 
-            return ResponseEntity.ok(new LoginResponse(jwt, request.getUsername(), role));
+            String refresh = jwtTokenProvider.generateRefreshToken(request.getUsername());
+
+            return ResponseEntity.ok(new LoginResponse(jwt, refresh, request.getUsername(), role));
         } catch (AuthenticationException ex) {
             return ResponseEntity.status(401).body(Map.of("error", "Credenciales invalidas"));
         }
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refresh(@RequestBody Map<String, String> body) {
+        String refreshToken = body != null ? body.get("refreshToken") : null;
+        if (refreshToken == null || refreshToken.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "refreshToken es obligatorio"));
+        }
+        if (!jwtTokenProvider.validateToken(refreshToken) || !jwtTokenProvider.isRefreshToken(refreshToken)) {
+            return ResponseEntity.status(401).body(Map.of("error", "Refresh token invalido o expirado"));
+        }
+        String username = jwtTokenProvider.getUsernameFromJWT(refreshToken);
+        Usuario u = usuarioRepository.findByUsername(username).orElse(null);
+        if (u == null) {
+            return ResponseEntity.status(401).body(Map.of("error", "Usuario no encontrado"));
+        }
+        String newAccess  = jwtTokenProvider.generateAccessToken(username);
+        String newRefresh = jwtTokenProvider.generateRefreshToken(username);
+        return ResponseEntity.ok(new LoginResponse(newAccess, newRefresh, username, u.getRole()));
     }
 
     @PostMapping("/register")

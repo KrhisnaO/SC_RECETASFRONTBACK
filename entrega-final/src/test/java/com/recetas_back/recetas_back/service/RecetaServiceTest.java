@@ -206,4 +206,43 @@ class RecetaServiceTest {
 
         verify(recetaRepository).deleteById(5L);
     }
+
+    // ── listarRecientes / listarPopulares ─────────────────────────────────
+
+    @Test
+    @DisplayName("listarRecientes acota el límite y consulta el repositorio")
+    void listarRecientes_acotaLimite() {
+        when(recetaRepository.findRecientes(any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(List.of(receta));
+        List<Receta> r = recetaService.listarRecientes(5);
+        assertThat(r).hasSize(1);
+        verify(recetaRepository).findRecientes(any(org.springframework.data.domain.Pageable.class));
+    }
+
+    @Test
+    @DisplayName("listarRecientes con límite 0 usa mínimo 1")
+    void listarRecientes_limiteCero_usaMinimo() {
+        when(recetaRepository.findRecientes(any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(List.of());
+        recetaService.listarRecientes(0);
+        verify(recetaRepository).findRecientes(any(org.springframework.data.domain.Pageable.class));
+    }
+
+    @Test
+    @DisplayName("listarRecientes con límite excesivo se acota a 50")
+    void listarRecientes_limiteExcesivo_seAcota() {
+        when(recetaRepository.findRecientes(any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(List.of());
+        recetaService.listarRecientes(1000);
+        verify(recetaRepository).findRecientes(any(org.springframework.data.domain.Pageable.class));
+    }
+
+    @Test
+    @DisplayName("listarPopulares delega en findPopulares del repositorio")
+    void listarPopulares_delega() {
+        when(recetaRepository.findPopulares(any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(List.of(receta));
+        assertThat(recetaService.listarPopulares(8)).hasSize(1);
+        verify(recetaRepository).findPopulares(any(org.springframework.data.domain.Pageable.class));
+    }
 }

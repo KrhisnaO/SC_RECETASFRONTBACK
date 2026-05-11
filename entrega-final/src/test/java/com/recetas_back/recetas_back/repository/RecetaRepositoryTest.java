@@ -71,4 +71,43 @@ class RecetaRepositoryTest {
         List<Receta> resultado = recetaRepository.searchRecetas(null, null, null, null);
         assertThat(resultado).hasSizeGreaterThanOrEqualTo(2);
     }
+
+    @Test
+    @DisplayName("findRecientes ordena por fecha de creación descendente")
+    void findRecientes_ordenaDescendente() {
+        Receta r1 = crearReceta("Antigua", "T", "P", "D", "i");
+        Receta r2 = crearReceta("Reciente", "T", "P", "D", "i");
+
+        List<Receta> recientes = recetaRepository.findRecientes(
+                org.springframework.data.domain.PageRequest.of(0, 5));
+
+        assertThat(recientes).isNotEmpty();
+        // La más nueva debe estar primero (mismo timestamp -> orden por id desc)
+        assertThat(recientes.get(0).getId()).isEqualTo(r2.getId());
+    }
+
+    @Test
+    @DisplayName("findRecientes respeta el tamaño de página")
+    void findRecientes_respetaPageSize() {
+        crearReceta("R1", "T", "P", "D", "i");
+        crearReceta("R2", "T", "P", "D", "i");
+        crearReceta("R3", "T", "P", "D", "i");
+
+        List<Receta> recientes = recetaRepository.findRecientes(
+                org.springframework.data.domain.PageRequest.of(0, 2));
+
+        assertThat(recientes).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("findPopulares devuelve todas las recetas (sin valoraciones quedan al final)")
+    void findPopulares_sinValoraciones() {
+        crearReceta("Sin votos 1", "T", "P", "D", "i");
+        crearReceta("Sin votos 2", "T", "P", "D", "i");
+
+        List<Receta> populares = recetaRepository.findPopulares(
+                org.springframework.data.domain.PageRequest.of(0, 10));
+
+        assertThat(populares).hasSizeGreaterThanOrEqualTo(2);
+    }
 }

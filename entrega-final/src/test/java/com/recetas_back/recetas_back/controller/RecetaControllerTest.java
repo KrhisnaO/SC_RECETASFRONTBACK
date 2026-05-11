@@ -123,6 +123,31 @@ class RecetaControllerTest {
                 .andExpect(status().isOk());
     }
 
+    @Test
+    @DisplayName("GET /api/recetas/recientes → 200 con lista")
+    void recientes_retorna200() throws Exception {
+        when(recetaService.listarRecientes(8)).thenReturn(List.of(receta));
+        mockMvc.perform(get("/api/recetas/recientes"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].nombre").value("Paella"));
+    }
+
+    @Test
+    @DisplayName("GET /api/recetas/recientes con límite custom → 200")
+    void recientes_limiteCustom() throws Exception {
+        when(recetaService.listarRecientes(3)).thenReturn(List.of(receta));
+        mockMvc.perform(get("/api/recetas/recientes").param("limite", "3"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("GET /api/recetas/populares → 200 con lista")
+    void populares_retorna200() throws Exception {
+        when(recetaService.listarPopulares(8)).thenReturn(List.of(receta));
+        mockMvc.perform(get("/api/recetas/populares"))
+                .andExpect(status().isOk());
+    }
+
     // ── POST publicar ─────────────────────────────────────────────────────
 
     @Test
@@ -146,6 +171,7 @@ class RecetaControllerTest {
 
         mockMvc.perform(post("/api/recetas")
                         .with(csrf())
+                        .principal(() -> "chef")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isCreated());
@@ -161,6 +187,7 @@ class RecetaControllerTest {
 
         mockMvc.perform(post("/api/recetas")
                         .with(csrf())
+                        .principal(() -> "chef")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"nombre\":\"\",\"tipoCocina\":\"Espanola\"}"))
                 .andExpect(status().isBadRequest())
@@ -168,16 +195,13 @@ class RecetaControllerTest {
     }
 
     @Test
-    @DisplayName("POST /api/recetas → 201 sin Principal (filtros desactivados en test)")
-    void publicar_sinPrincipal_usaFallback() throws Exception {
-        when(recetaService.crear(any(), any(), any(), any(), any(),
-                any(), any(), any(), any(), eq("test"))).thenReturn(receta);
-
+    @DisplayName("POST /api/recetas → 401 sin Principal (usuario no autenticado)")
+    void publicar_sinPrincipal_retorna401() throws Exception {
         mockMvc.perform(post("/api/recetas")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"nombre\":\"Paella\",\"tiempoPrepMinutos\":60}"))
-                .andExpect(status().isCreated());
+                .andExpect(status().isUnauthorized());
     }
 
     // ── DELETE ────────────────────────────────────────────────────────────

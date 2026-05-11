@@ -5,6 +5,8 @@ public class ComentarioDTO {
     private String contenido;
     private UsuarioDTO usuario;
     private String createdAt;
+    private String estado;
+    private String motivoRechazo;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -14,4 +16,8 @@ public class ComentarioDTO {
     public void setUsuario(UsuarioDTO u) { this.usuario = u; }
     public String getCreatedAt() { return createdAt; }
     public void setCreatedAt(String c) { this.createdAt = c; }
+    public String getEstado() { return estado; }
+    public void setEstado(String estado) { this.estado = estado; }
+    public String getMotivoRechazo() { return motivoRechazo; }
+    public void setMotivoRechazo(String motivoRechazo) { this.motivoRechazo = motivoRechazo; }
 }

@@ -5,6 +5,8 @@ import com.recetas_back.recetas_back.model.Usuario;
 import com.recetas_back.recetas_back.repository.RecetaRepository;
 import com.recetas_back.recetas_back.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -33,6 +35,18 @@ public class RecetaService {
 
     public List<Receta> buscar(String query, String tipoCocina, String pais, String dificultad) {
         return recetaRepository.searchRecetas(query, tipoCocina, pais, dificultad);
+    }
+
+    public List<Receta> listarRecientes(int limite) {
+        int safeLimit = Math.max(1, Math.min(limite, 50));
+        Pageable page = PageRequest.of(0, safeLimit);
+        return recetaRepository.findRecientes(page);
+    }
+
+    public List<Receta> listarPopulares(int limite) {
+        int safeLimit = Math.max(1, Math.min(limite, 50));
+        Pageable page = PageRequest.of(0, safeLimit);
+        return recetaRepository.findPopulares(page);
     }
 
     public Receta guardar(Receta receta) {

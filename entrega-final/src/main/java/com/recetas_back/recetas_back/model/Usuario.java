@@ -27,7 +27,9 @@ public class Usuario {
     @Column(nullable = false)
     private String role;
 
-    public Usuario() {}
+    public Usuario() {
+        // Constructor por defecto requerido por JPA
+    }
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

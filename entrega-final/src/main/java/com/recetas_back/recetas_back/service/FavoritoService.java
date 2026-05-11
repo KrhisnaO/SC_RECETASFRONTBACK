@@ -19,6 +19,8 @@ import java.util.Optional;
 @Service
 public class FavoritoService {
 
+    private static final String USUARIO_NO_ENCONTRADO = "Usuario no encontrado";
+
     @Autowired
     private FavoritoRepository favoritoRepository;
     @Autowired
@@ -32,7 +34,7 @@ public class FavoritoService {
      */
     public Favorito agregar(String username, Long recetaId) {
         Usuario usuario = usuarioRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+                .orElseThrow(() -> new IllegalArgumentException(USUARIO_NO_ENCONTRADO));
         Receta receta = recetaRepository.findById(recetaId)
                 .orElseThrow(() -> new IllegalArgumentException("Receta no encontrada"));
 
@@ -54,7 +56,7 @@ public class FavoritoService {
      */
     public void eliminar(String username, Long recetaId) {
         Usuario usuario = usuarioRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+                .orElseThrow(() -> new IllegalArgumentException(USUARIO_NO_ENCONTRADO));
 
         favoritoRepository.findByUsuarioIdAndRecetaId(usuario.getId(), recetaId)
                 .ifPresent(favoritoRepository::delete);
@@ -65,7 +67,7 @@ public class FavoritoService {
      */
     public List<Receta> listar(String username) {
         Usuario usuario = usuarioRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+                .orElseThrow(() -> new IllegalArgumentException(USUARIO_NO_ENCONTRADO));
 
         return favoritoRepository.findByUsuarioId(usuario.getId())
                 .stream()

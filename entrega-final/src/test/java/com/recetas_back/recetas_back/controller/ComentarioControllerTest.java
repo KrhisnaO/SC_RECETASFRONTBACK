@@ -63,6 +63,7 @@ class ComentarioControllerTest {
         req.setContenido("Muy buena!");
         mockMvc.perform(post("/api/recetas/1/comentarios")
                         .with(csrf())
+                        .principal(() -> "maria")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isCreated());
@@ -78,6 +79,7 @@ class ComentarioControllerTest {
         req.setContenido("Texto");
         mockMvc.perform(post("/api/recetas/99/comentarios")
                         .with(csrf())
+                        .principal(() -> "maria")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isNotFound());

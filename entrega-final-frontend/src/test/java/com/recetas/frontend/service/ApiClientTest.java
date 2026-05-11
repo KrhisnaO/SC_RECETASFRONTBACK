@@ -148,15 +148,17 @@ class ApiClientTest {
 
     // ── login ────────────────────────────────────────────────────────────
     @Test
-    @DisplayName("login retorna token JWT si credenciales correctas")
-    void login_retornaToken() {
+    @DisplayName("login retorna LoginResult si credenciales correctas")
+    void login_retornaLoginResult() {
         ResponseEntity<Map> resp = new ResponseEntity<>(
-                Map.of("token", "eyJ.fake", "username", "admin"), HttpStatus.OK);
+                Map.of("token", "eyJ.fake", "role", "ROLE_USER"), HttpStatus.OK);
         when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(Map.class)))
                 .thenReturn(resp);
 
-        String token = apiClient.login("admin", "password");
-        assertThat(token).isEqualTo("eyJ.fake");
+        ApiClient.LoginResult result = apiClient.login("admin", "password");
+        assertThat(result).isNotNull();
+        assertThat(result.token()).isEqualTo("eyJ.fake");
+        assertThat(result.role()).isEqualTo("ROLE_USER");
     }
 
     @Test
@@ -201,5 +203,147 @@ class ApiClientTest {
         when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(String.class)))
                 .thenThrow(new RuntimeException("Error"));
         assertThat(apiClient.valorar(1L, 5, "token")).isFalse();
+    }
+
+    // ── obtenerRecientes / obtenerPopulares ──────────────────────────────
+
+    @Test
+    @DisplayName("obtenerRecientes retorna lista del backend")
+    void obtenerRecientes_retornaLista() {
+        RecetaDTO r = new RecetaDTO(); r.setNombre("Nueva");
+        ResponseEntity<List<RecetaDTO>> resp = new ResponseEntity<>(List.of(r), HttpStatus.OK);
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.GET),
+                isNull(), any(ParameterizedTypeReference.class))).thenReturn(resp);
+
+        List<RecetaDTO> resultado = apiClient.obtenerRecientes(8);
+        assertThat(resultado).hasSize(1);
+        assertThat(resultado.get(0).getNombre()).isEqualTo("Nueva");
+    }
+
+    @Test
+    @DisplayName("obtenerRecientes retorna vacío si lanza excepción")
+    void obtenerRecientes_retornaVacioSiError() {
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.GET),
+                isNull(), any(ParameterizedTypeReference.class)))
+                .thenThrow(new RuntimeException("Backend caído"));
+        assertThat(apiClient.obtenerRecientes(8)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("obtenerPopulares retorna lista del backend")
+    void obtenerPopulares_retornaLista() {
+        RecetaDTO r = new RecetaDTO(); r.setNombre("Popular");
+        ResponseEntity<List<RecetaDTO>> resp = new ResponseEntity<>(List.of(r), HttpStatus.OK);
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.GET),
+                isNull(), any(ParameterizedTypeReference.class))).thenReturn(resp);
+        assertThat(apiClient.obtenerPopulares(5)).hasSize(1);
+    }
+
+    // ── Banners ──────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("obtenerBanners retorna lista de banners")
+    void obtenerBanners_retornaLista() {
+        BannerDTO b = new BannerDTO(); b.setTitulo("Promo");
+        ResponseEntity<List<BannerDTO>> resp = new ResponseEntity<>(List.of(b), HttpStatus.OK);
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.GET),
+                isNull(), any(ParameterizedTypeReference.class))).thenReturn(resp);
+        assertThat(apiClient.obtenerBanners()).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("obtenerBanners retorna vacío si lanza excepción")
+    void obtenerBanners_retornaVacioSiError() {
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.GET),
+                isNull(), any(ParameterizedTypeReference.class)))
+                .thenThrow(new RuntimeException("Error"));
+        assertThat(apiClient.obtenerBanners()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("crearBannerAdmin retorna true si backend responde 201")
+    void crearBannerAdmin_retornaTrue() {
+        ResponseEntity<String> resp = new ResponseEntity<>("ok", HttpStatus.CREATED);
+        when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(String.class)))
+                .thenReturn(resp);
+        assertThat(apiClient.crearBannerAdmin("T", "E", "https://img/x", "https://link",
+                true, 1, "token")).isTrue();
+    }
+
+    @Test
+    @DisplayName("eliminarBannerAdmin retorna true si backend responde 204")
+    void eliminarBannerAdmin_retornaTrue() {
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.DELETE),
+                any(HttpEntity.class), eq(String.class)))
+                .thenReturn(new ResponseEntity<>(HttpStatus.NO_CONTENT));
+        assertThat(apiClient.eliminarBannerAdmin(1L, "token")).isTrue();
+    }
+
+    @Test
+    @DisplayName("eliminarBannerAdmin retorna false si lanza excepción")
+    void eliminarBannerAdmin_retornaFalseSiError() {
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.DELETE),
+                any(HttpEntity.class), eq(String.class)))
+                .thenThrow(new RuntimeException("Error"));
+        assertThat(apiClient.eliminarBannerAdmin(1L, "token")).isFalse();
+    }
+
+    // ── Moderación ───────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("publicarComentarioDetallado retorna OK si backend responde 201")
+    void publicarComentarioDetallado_ok() {
+        ResponseEntity<Map> resp = new ResponseEntity<>(Map.of("id", 1), HttpStatus.CREATED);
+        when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(Map.class)))
+                .thenReturn(resp);
+        ApiClient.ComentarioResult r = apiClient.publicarComentarioDetallado(1L, "Texto", "token");
+        assertThat(r.status()).isEqualTo("OK");
+    }
+
+    @Test
+    @DisplayName("publicarComentarioDetallado retorna ERROR si conexión falla")
+    void publicarComentarioDetallado_error() {
+        when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(Map.class)))
+                .thenThrow(new RuntimeException("Conexión rota"));
+        ApiClient.ComentarioResult r = apiClient.publicarComentarioDetallado(1L, "Texto", "token");
+        assertThat(r.status()).isEqualTo("ERROR");
+    }
+
+    @Test
+    @DisplayName("aprobarComentarioAdmin retorna true si backend responde 200")
+    void aprobarComentarioAdmin_retornaTrue() {
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.PUT),
+                any(HttpEntity.class), eq(Map.class)))
+                .thenReturn(new ResponseEntity<>(HttpStatus.OK));
+        assertThat(apiClient.aprobarComentarioAdmin(1L, "token")).isTrue();
+    }
+
+    @Test
+    @DisplayName("rechazarComentarioAdmin retorna true si backend responde 200")
+    void rechazarComentarioAdmin_retornaTrue() {
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.PUT),
+                any(HttpEntity.class), eq(Map.class)))
+                .thenReturn(new ResponseEntity<>(HttpStatus.OK));
+        assertThat(apiClient.rechazarComentarioAdmin(1L, "Lenguaje ofensivo", "token")).isTrue();
+    }
+
+    @Test
+    @DisplayName("rechazarComentarioAdmin retorna false si lanza excepción")
+    void rechazarComentarioAdmin_retornaFalseSiError() {
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.PUT),
+                any(HttpEntity.class), eq(Map.class)))
+                .thenThrow(new RuntimeException("Backend caído"));
+        assertThat(apiClient.rechazarComentarioAdmin(1L, "x", "token")).isFalse();
+    }
+
+    @Test
+    @DisplayName("listarComentariosPorEstado retorna lista filtrada")
+    void listarComentariosPorEstado_retornaLista() {
+        ResponseEntity<List<Map<String, Object>>> resp = new ResponseEntity<>(
+                List.of(Map.of("id", 1, "estado", "PENDIENTE")), HttpStatus.OK);
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.GET),
+                any(HttpEntity.class), any(ParameterizedTypeReference.class)))
+                .thenReturn(resp);
+        assertThat(apiClient.listarComentariosPorEstado("PENDIENTE", "token")).hasSize(1);
     }
 }

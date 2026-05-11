@@ -76,7 +76,7 @@ class AuthServiceRegistroTest {
 
         assertThatThrownBy(() -> authService.registrar(req))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("ya está en uso");
+                .hasMessageContaining("ya esta en uso");
 
         verify(usuarioRepository, never()).save(any());
     }

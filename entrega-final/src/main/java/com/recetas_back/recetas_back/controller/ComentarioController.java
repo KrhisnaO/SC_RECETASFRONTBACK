@@ -1,17 +1,17 @@
 package com.recetas_back.recetas_back.controller;
 
 import com.recetas_back.recetas_back.dto.ComentarioRequest;
+import com.recetas_back.recetas_back.exception.ContenidoNoPermitidoException;
 import com.recetas_back.recetas_back.model.Comentario;
 import com.recetas_back.recetas_back.service.ComentarioService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.*;
-import java.util.List;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
-/** API REST de Comentarios. GET público, POST privado (requiere JWT). */
+import java.util.List;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/recetas/{id}/comentarios")
 public class ComentarioController {
@@ -26,23 +26,24 @@ public class ComentarioController {
 
     @PostMapping
     public ResponseEntity<?> agregar(
-        @PathVariable Long id,
-        @RequestBody ComentarioRequest request,
-        java.security.Principal principal) {
+            @PathVariable Long id,
+            @RequestBody ComentarioRequest request,
+            java.security.Principal principal) {
 
-    try {
-         if (principal == null) {
+        if (principal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        String username = principal.getName();
 
-        Comentario c = comentarioService.agregar(id, username, request.getContenido());
-
-        return ResponseEntity.status(201).body(c);
-
-    } catch (IllegalArgumentException e) {
-        return ResponseEntity.status(404).build();
+        try {
+            Comentario c = comentarioService.agregar(id, principal.getName(), request.getContenido());
+            return ResponseEntity.status(HttpStatus.CREATED).body(c);
+        } catch (ContenidoNoPermitidoException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "error",  "Comentario rechazado por moderación",
+                    "motivo", e.getMessage()
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
     }
 }
-}
-

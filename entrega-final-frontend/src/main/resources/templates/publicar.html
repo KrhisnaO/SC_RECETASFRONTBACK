@@ -10,7 +10,7 @@
     <div th:if="${error}" class="error-msg" th:text="${error}"></div>
     <div th:if="${param.publicado}" class="success-msg">¡Receta publicada exitosamente!</div>
 
-    <form th:action="@{/publicar}" method="post">
+    <form th:action="@{/publicar}" method="post" enctype="multipart/form-data">
 
       <div class="form-group">
         <label for="nombre">Nombre de la receta *</label>
@@ -79,11 +79,58 @@
                placeholder="https://ejemplo.com/imagen.jpg">
       </div>
 
+      <!-- Subida de fotos y videos adicionales (R-F9) -->
+      <fieldset class="media-upload">
+        <legend>Fotos y videos adicionales <small>(opcional)</small></legend>
+        <p class="media-help">
+          Puedes subir múltiples archivos. Formatos permitidos:
+          <strong>JPG, PNG, GIF, WebP, MP4, WebM, OGG</strong>. Tamaño máximo: 50&nbsp;MB por archivo.
+        </p>
+
+        <div class="form-group">
+          <label for="fotos">📷 Fotos</label>
+          <input type="file" id="fotos" name="fotos" class="form-control"
+                 accept="image/jpeg,image/png,image/gif,image/webp" multiple>
+        </div>
+
+        <div class="form-group">
+          <label for="videos">🎬 Videos</label>
+          <input type="file" id="videos" name="videos" class="form-control"
+                 accept="video/mp4,video/webm,video/ogg" multiple>
+        </div>
+      </fieldset>
+
       <div style="display:flex; gap:1rem; margin-top:1rem;">
         <button type="submit" class="btn btn-primary btn-block">Publicar Receta</button>
         <a th:href="@{/home}" class="btn btn-outline btn-block">Cancelar</a>
       </div>
     </form>
+
+    <style>
+      .media-upload {
+        border: 1px dashed var(--border, #d6d6d6);
+        border-radius: 8px;
+        padding: 1rem 1.25rem;
+        margin: 1rem 0;
+        background: #fafafa;
+      }
+      .media-upload legend {
+        padding: 0 .5rem;
+        font-weight: 600;
+        font-size: .9rem;
+        color: var(--text-muted, #555);
+      }
+      .media-help {
+        font-size: .8rem;
+        color: var(--text-muted, #666);
+        margin-bottom: .75rem;
+        line-height: 1.4;
+      }
+      .media-upload input[type="file"] {
+        padding: .35rem 0;
+        font-size: .9rem;
+      }
+    </style>
   </div>
 </main>
 <footer th:replace="~{fragments/layout :: footer}"></footer>

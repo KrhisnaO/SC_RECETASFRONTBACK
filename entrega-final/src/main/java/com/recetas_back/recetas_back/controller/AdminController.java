@@ -1,8 +1,11 @@
 package com.recetas_back.recetas_back.controller;
 
+import com.recetas_back.recetas_back.model.Comentario;
+import com.recetas_back.recetas_back.model.Comentario.Estado;
 import com.recetas_back.recetas_back.model.Receta;
 import com.recetas_back.recetas_back.model.Usuario;
 import com.recetas_back.recetas_back.service.AdminService;
+import com.recetas_back.recetas_back.service.ComentarioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -11,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 @RestController
@@ -20,6 +24,9 @@ public class AdminController {
 
     @Autowired
     private AdminService adminService;
+
+    @Autowired
+    private ComentarioService comentarioService;
 
     // Usuarios
 
@@ -73,19 +80,66 @@ public class AdminController {
     // Comentarios
 
     @GetMapping("/comentarios")
-    public ResponseEntity<List<Map<String, Object>>> listarComentarios() {
-        List<Map<String, Object>> resultado = new ArrayList<>();
-        for (var c : adminService.listarTodosComentarios()) {
-            Map<String, Object> map = new HashMap<>();
-            map.put("id",         c.getId());
-            map.put("contenido",  c.getContenido() != null ? c.getContenido() : "");
-            map.put("usuario",    c.getUsuario()  != null ? c.getUsuario().getUsername()  : "Eliminado");
-            map.put("recetaId",   c.getReceta()   != null ? c.getReceta().getId()         : 0L);
-            map.put("recetaNombre", c.getReceta() != null ? c.getReceta().getNombre()     : "");
-            map.put("createdAt",  c.getCreatedAt() != null ? c.getCreatedAt().toString()  : "");
-            resultado.add(map);
+    public ResponseEntity<List<Map<String, Object>>> listarComentarios(
+            @RequestParam(required = false) String estado) {
+        List<Comentario> base = obtenerComentariosPorEstado(estado);
+        if (base == null) {
+            return ResponseEntity.badRequest().build();
         }
-        return ResponseEntity.ok(resultado);
+        return ResponseEntity.ok(base.stream().map(this::comentarioToMap).toList());
+    }
+
+    private List<Comentario> obtenerComentariosPorEstado(String estado) {
+        if (estado == null || estado.isBlank()) {
+            return adminService.listarTodosComentarios();
+        }
+        try {
+            return comentarioService.listarPorEstado(Estado.valueOf(estado.toUpperCase(Locale.ROOT)));
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
+    }
+
+    private Map<String, Object> comentarioToMap(Comentario c) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("id",            c.getId());
+        map.put("contenido",     c.getContenido() != null ? c.getContenido() : "");
+        map.put("usuario",       c.getUsuario() != null ? c.getUsuario().getUsername() : "Eliminado");
+        map.put("recetaId",      c.getReceta() != null ? c.getReceta().getId() : 0L);
+        map.put("recetaNombre",  c.getReceta() != null ? c.getReceta().getNombre() : "");
+        map.put("createdAt",     c.getCreatedAt() != null ? c.getCreatedAt().toString() : "");
+        map.put("estado",        c.getEstado() != null ? c.getEstado().name() : Estado.PENDIENTE.name());
+        map.put("motivoRechazo", c.getMotivoRechazo() != null ? c.getMotivoRechazo() : "");
+        return map;
+    }
+
+    @PutMapping("/comentarios/{id}/aprobar")
+    public ResponseEntity<?> aprobarComentario(@PathVariable Long id) {
+        try {
+            Comentario c = comentarioService.aprobar(id);
+            return ResponseEntity.ok(Map.of(
+                    "id", c.getId(),
+                    "estado", c.getEstado().name()
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(404).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PutMapping("/comentarios/{id}/rechazar")
+    public ResponseEntity<?> rechazarComentario(@PathVariable Long id,
+                                                 @RequestBody(required = false) Map<String, String> body) {
+        try {
+            String motivo = body != null ? body.get("motivo") : null;
+            Comentario c = comentarioService.rechazar(id, motivo);
+            return ResponseEntity.ok(Map.of(
+                    "id", c.getId(),
+                    "estado", c.getEstado().name(),
+                    "motivoRechazo", c.getMotivoRechazo() != null ? c.getMotivoRechazo() : ""
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(404).body(Map.of("error", e.getMessage()));
+        }
     }
 
     @DeleteMapping("/comentarios/{id}")
